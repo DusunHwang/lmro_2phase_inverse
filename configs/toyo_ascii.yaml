@@ -1,0 +1,145 @@
+# ============================================================
+# toyo_ascii.yaml  —  TOYO SYSTEM / TOSCAT 데이터 파일 적응 설정
+# 실제 파일 형식이 달라지면 이 파일만 수정합니다.
+# ============================================================
+
+# --- 인코딩 자동 탐지 후보 (순서대로 시도) ---
+encoding_candidates:
+  - utf-8-sig
+  - utf-8
+  - cp932
+  - shift_jis
+  - euc-jp
+
+# --- 구분자 자동 탐지 후보 ---
+delimiter_candidates:
+  - ","
+  - "\t"
+  - ";"
+  - "whitespace"
+
+# --- 헤더 인식 설정 ---
+header:
+  # 컬럼 헤더 행을 찾을 때 반드시 포함되어야 할 키워드 중 하나
+  required_keywords:
+    - "Time"
+    - "Voltage"
+    - "時間"
+    - "電圧"
+    - "V"
+  # 헤더 앞에 메타데이터 행이 최대 몇 줄까지 있을 수 있는지
+  max_metadata_rows: 30
+  # 단위 행이 헤더 바로 아래에 있는 경우 skip
+  skip_unit_row: false    # 단위 행이 별도로 있으면 true
+
+# --- 컬럼 alias 매핑 ---
+# 새로운 컬럼명이 나오면 해당 필드에 추가합니다.
+column_aliases:
+  time_s:
+    - "Time(s)"
+    - "Time"
+    - "TestTime"
+    - "StepTime"
+    - "Total Time"
+    - "時間"
+    - "試験時間"
+    - "ステップ時間"
+
+  voltage_v:
+    - "Voltage(V)"
+    - "Voltage"
+    - "Volt"
+    - "V"
+    - "電圧"
+
+  current_a:
+    - "Current(A)"
+    - "Current"
+    - "Curr"
+    - "I"
+    - "電流"
+    # mA 단위 컬럼은 current_ma 로 별도 매핑
+  current_ma:
+    - "Current(mA)"
+    - "Current(mA)"
+
+  capacity_ah:
+    - "Capacity(Ah)"
+    - "Capacity"
+    - "Cap"
+    - "容量"
+  capacity_mah:
+    - "Capacity(mAh)"
+
+  charge_capacity_ah:
+    - "Charge Capacity"
+    - "Chg.Cap."
+    - "充電容量"
+  discharge_capacity_ah:
+    - "Discharge Capacity"
+    - "DChg.Cap."
+    - "放電容量"
+
+  cycle_index:
+    - "Cycle_No"
+    - "Cycle No."
+    - "Cycle"
+    - "サイクル"
+
+  step_index:
+    - "Step_No"
+    - "Step No."
+    - "Step"
+    - "ステップ"
+
+  data_point:
+    - "Data_Point"
+    - "No."
+    - "Index"
+
+  mode:
+    - "Mode"
+    - "Step Mode"
+    - "モード"
+
+  temperature_c:
+    - "Temperature(C)"
+    - "Temperature"
+    - "Temp"
+    - "Temp(C)"
+    - "温度"
+
+# --- 단위 변환 ---
+# 파일에 mA/mAh 단위가 섞여 있는 경우 자동 변환
+unit_conversion:
+  current_ma_to_a: true    # current_ma 컬럼 → A 로 변환 (*0.001)
+  capacity_mah_to_ah: true # capacity_mah 컬럼 → Ah 로 변환 (*0.001)
+
+# --- 전류 부호 규약 ---
+current_sign:
+  # TOYO는 충전=양수, 방전=음수인 경우가 많음.
+  # PyBaMM은 방전=양수 convention이 기본이므로 필요시 반전.
+  discharge_positive_in_file: false   # true → PyBaMM 입력 시 부호 반전
+  pybamm_discharge_positive: false    # PyBaMM half-cell convention 맞춤
+
+# --- 프로토콜 자동 분리 임계값 ---
+protocol_detection:
+  rest_current_threshold_a: 1.0e-4   # |I| < 이 값이면 rest
+  cc_std_ratio_threshold: 0.05       # std(I)/|mean(I)| < 이 값이면 CC
+  cv_voltage_std_threshold_v: 0.002  # std(V) < 이 값이면 CV 후보
+
+# --- Mode 컬럼 매핑 (파일에 Mode 컬럼이 있을 때) ---
+mode_label_map:
+  cc_charge:    ["CC-Chg", "CC_Chg", "CCCharge", "CC Charge", "cc_charge", "CC充電"]
+  cv_charge:    ["CV-Chg", "CV_Chg", "CVCharge", "CV Charge", "cv_charge", "CV充電"]
+  cc_discharge: ["CC-Dchg", "CC_Dchg", "CCDischarge", "CC Discharge", "cc_discharge", "CC放電"]
+  cv_discharge: ["CV-Dchg", "CV_Dchg", "CVDischarge", "CV Discharge", "cv_discharge", "CV放電"]
+  rest:         ["Rest", "OCV", "rest", "休止"]
+
+# --- 불량 데이터 처리 ---
+cleaning:
+  voltage_min_v: 1.5
+  voltage_max_v: 5.5
+  current_max_abs_a: 100.0
+  drop_zero_time_duplicates: true
+  interpolate_missing: false   # 결측 보간 여부

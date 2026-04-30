@@ -1,0 +1,49 @@
+# Stage 3: DL inverse model training 설정
+dataset:
+  synthetic_params: "data/synthetic/params.parquet"
+  synthetic_profiles: "data/synthetic/profiles.zarr"
+  synthetic_ocp: "data/synthetic/ocp_profiles.zarr"
+  train_val_split: 0.9
+  grid_length: 512             # 정규화 용량 격자 길이
+
+model:
+  encoder:
+    type: "cnn_residual"       # cnn_residual | transformer | hybrid
+    in_channels: 10            # V_chg, I_chg, dVdQ_chg, dQdV_chg, V_dchg, I_dchg, dVdQ_dchg, dQdV_dchg, rest_relax, mask
+    base_channels: 64
+    n_blocks: 6
+    kernel_size: 7
+    dropout: 0.1
+    use_transformer: true      # CNN 후 Transformer encoder 추가
+    transformer_heads: 8
+    transformer_layers: 2
+
+  heads:
+    scalar_dim: 9              # log10_D_R3m, log10_D_C2m, log10_R_R3m, log10_R_C2m, frac_R3m, frac_C2m, R_contact, cap_scale, stoich_shift
+    ocp_grid_length: 256
+
+training:
+  batch_size: 64
+  max_epochs: 200
+  learning_rate: 1.0e-3
+  weight_decay: 1.0e-4
+  scheduler: "cosine"          # cosine | plateau | none
+  gradient_clip: 1.0
+  device: "auto"               # env.yaml의 torch.device 참조
+
+  loss_weights:
+    scalar_mse: 1.0
+    ocp_grid_mse: 2.0
+    ocp_deriv_mse: 1.0
+    smoothness_penalty: 0.5
+    voltage_range_penalty: 5.0
+    phase_fraction_sum: 10.0
+    permutation_invariant: true   # phase 교환 대칭 loss
+
+overfit_test:
+  n_samples: 100
+  max_epochs: 500
+
+output:
+  checkpoint_dir: "data/models/inverse"
+  best_model: "data/models/inverse/best_model.ckpt"

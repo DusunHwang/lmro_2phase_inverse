@@ -1,0 +1,71 @@
+# Stage 2: Synthetic dataset generation 설정
+generation:
+  n_samples:
+    pilot: 1000
+    production: 50000
+  current_n_samples: "pilot"        # pilot | production
+
+  sampling_strategy:
+    local_perturbation: 0.70
+    broad_prior: 0.20
+    edge_case: 0.10
+
+  model_mix:
+    SPMe: 0.90
+    DFN: 0.10
+
+  param_bounds:
+    rhombohedral_R3m:
+      log10_D_s:
+        sigma: 0.5
+        bounds: [-17.0, -12.0]
+      log10_R_particle:
+        sigma: 0.3
+        bounds: [-7.0, -4.5]
+      active_fraction:
+        sigma: 0.1
+        bounds: [0.05, 0.95]
+
+    monoclinic_C2m:
+      log10_D_s:
+        sigma: 0.7
+        bounds: [-18.0, -12.0]
+      log10_R_particle:
+        sigma: 0.3
+        bounds: [-7.0, -4.5]
+      active_fraction:
+        linked_to_r3m: true      # sum = 1 constraint
+
+    shared:
+      log10_contact_resistance:
+        bounds: [-5.0, -1.0]
+      capacity_scale:
+        bounds: [0.7, 1.3]
+      initial_stoichiometry_shift:
+        bounds: [-0.08, 0.08]
+
+  ocp_perturbation:
+    types:
+      - "tanh_perturbation"
+      - "smooth_spline"
+      - "gaussian_process"
+      - "plateau_shift"
+      - "transition_shift"
+      - "localized_shoulder"
+    gp_amplitude_range: [0.005, 0.08]
+    voltage_bounds: [1.5, 5.2]
+
+quality_filter:
+  voltage_min_v: 1.5
+  voltage_max_v: 5.5
+  capacity_min_fraction: 0.2
+  capacity_max_fraction: 2.0
+  max_voltage_oscillation: 0.1
+  max_dqdv_spike: 50.0
+
+output:
+  params_file: "data/synthetic/params.parquet"
+  profiles_file: "data/synthetic/profiles.zarr"
+  ocp_profiles_file: "data/synthetic/ocp_profiles.zarr"
+  metadata_file: "data/synthetic/metadata.parquet"
+  failed_cases_file: "data/synthetic/failed_cases.parquet"

@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# 가상환경
+.venv/
+venv/
+env/
+
+# PyBaMM 캐시
+.pybamm/
+
+# 데이터 (대용량 파일 제외)
+data/raw/toyo/*.csv
+data/processed/
+data/synthetic/
+data/models/
+data/reports/
+
+# 단, 샘플 데이터는 포함
+!data/raw/toyo/.gitkeep
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 로그
+*.log
+
+# 임시 파일
+*.tmp
+/tmp/

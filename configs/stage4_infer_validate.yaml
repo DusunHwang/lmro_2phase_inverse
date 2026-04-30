@@ -1,0 +1,18 @@
+# Stage 4: Inference & forward validation 설정
+inference:
+  model_checkpoint: "data/models/inverse/best_model.ckpt"
+  input_data: "data/raw/toyo/Toyo_LMR_HalfCell_Sample_50cycles.csv"
+  toyo_config: "configs/toyo_ascii.yaml"
+  use_cycles: null              # null = 전체 사이클
+
+forward_validation:
+  model_type: "SPMe"            # SPMe | DFN
+  subset_cycles_for_dfn: [1, 5, 10]  # DFN 검증에 사용할 사이클
+
+output:
+  inference_dir: "data/reports/inference"
+  predicted_params: "data/reports/inference/predicted_params.json"
+  predicted_ocp_R3m: "data/reports/inference/predicted_ocp_R3m.csv"
+  predicted_ocp_C2m: "data/reports/inference/predicted_ocp_C2m.csv"
+  forward_validation_plot: "data/reports/inference/forward_validation.png"
+  residual_summary: "data/reports/inference/residual_summary.json"

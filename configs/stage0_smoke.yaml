@@ -1,0 +1,11 @@
+# Stage 0: PyBaMM smoke test 설정
+smoke_test:
+  models: ["SPM", "SPMe", "DFN"]
+  try_two_phase: true
+  two_phase_options:
+    particle_phases: ["1", "2"]      # (negative, positive) half-cell
+    particle: ["Fickian diffusion", "Fickian diffusion"]
+    open_circuit_potential: ["single", "single"]
+  simulation_time_s: 3600
+  current_a: 0.25e-3               # 0.25 mA
+  report_path: "data/reports/smoke_test_report.json"

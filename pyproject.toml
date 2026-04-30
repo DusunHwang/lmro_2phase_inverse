@@ -1,0 +1,44 @@
+[project]
+name = "lmro-2phase-inverse"
+version = "0.1.0"
+description = "LMR 2-phase inverse modeling pipeline: TOYO cycler data → phase parameters via PyBaMM + deep learning"
+requires-python = ">=3.11"
+
+dependencies = [
+  "pybamm>=26.4,<27",
+  "numpy",
+  "scipy",
+  "pandas",
+  "polars",
+  "pyarrow",
+  "zarr",
+  "h5py",
+  "scikit-learn",
+  "torch",
+  "lightning",
+  "optuna",
+  "matplotlib",
+  "pydantic>=2.0",
+  "omegaconf",
+  "tqdm",
+  "charset-normalizer",
+  "pytest",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest-cov",
+  "ipykernel",
+  "jupyterlab",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[tool.setuptools.packages.find]
+where = ["src"]

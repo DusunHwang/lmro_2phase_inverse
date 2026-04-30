@@ -1,0 +1,66 @@
+# ============================================================
+# halfcell_lmr_base.yaml  —  LMR half-cell 기본 물리 파라미터
+# ============================================================
+
+cell:
+  working_electrode: "positive"
+  counter_electrode: "Li metal"
+
+phases:
+  - id: "rhombohedral_R3m"
+    pybamm_key: "Primary"
+  - id: "monoclinic_C2m"
+    pybamm_key: "Secondary"
+
+# --- 전극 기하학 (초기 추정값, Stage 1 fitting 대상) ---
+positive_electrode:
+  thickness_m: 75.0e-6
+  porosity: 0.3
+  bruggeman: 1.5
+  active_material_volume_fraction: 0.665
+
+  rhombohedral_R3m:
+    particle_radius_m: 5.0e-6
+    D_s_m2_s: 1.0e-14
+    active_fraction: 0.6          # R3m + C2m = 1 constraint
+    c_s_max_mol_m3: 47500.0
+    c_s_0_fraction: 0.5           # 초기 충전상태 추정
+
+  monoclinic_C2m:
+    particle_radius_m: 3.0e-6
+    D_s_m2_s: 1.0e-15
+    active_fraction: 0.4          # 1 - R3m fraction
+    c_s_max_mol_m3: 47500.0
+    c_s_0_fraction: 0.5
+
+# --- 전해질 ---
+electrolyte:
+  conductivity: "default"         # PyBaMM 기본값 사용
+  diffusivity: "default"
+  transference_number: "default"
+
+# --- Li metal 상대 전극 ---
+li_metal:
+  exchange_current_density: 1.0e-3  # A/m^2
+
+# --- 반응 kinetics (positive) ---
+kinetics:
+  R3m:
+    i_0_ref: 2.0e-4    # A/m^2
+    alpha_a: 0.5
+    alpha_c: 0.5
+  C2m:
+    i_0_ref: 1.0e-4
+    alpha_a: 0.5
+    alpha_c: 0.5
+
+# --- 접촉저항 ---
+contact_resistance_ohm: 0.005    # Ω·m^2
+
+# --- 전압 범위 ---
+voltage:
+  upper_v: 4.8
+  lower_v: 2.0
+
+# --- OCP 모드 ---
+ocp_mode: "equilibrium"   # equilibrium | charge_discharge_split | equilibrium_plus_hysteresis_offset

@@ -1,0 +1,41 @@
+# Stage 1: tanh OCP 초기 fitting 설정
+input:
+  data_file: "data/raw/toyo/Toyo_LMR_HalfCell_Sample_50cycles.csv"
+  toyo_config: "configs/toyo_ascii.yaml"
+  use_cycles: [1, 2, 3]             # 사용할 사이클 번호 (null = 전체)
+  exclude_formation_cycles: [1]     # formation 사이클 제외 목록
+
+fitting:
+  cycle_selection: "low_c_rate"     # low_c_rate | all | manual
+  protocol_blocks:
+    - "cc_charge"
+    - "cv_charge"
+    - "rest"
+    - "cc_discharge"
+
+  loss_weights:
+    w_v_q: 1.0      # V(Q) MSE
+    w_v_t: 0.3      # V(t) MSE
+    w_dvdq: 2.0     # dV/dQ MSE
+    w_dqdv: 2.0     # dQ/dV MSE
+    w_rest: 0.5     # rest relaxation
+    w_rate: 1.0     # multi C-rate block
+    w_prior: 0.1    # parameter prior penalty
+    w_ocp_smooth: 0.5  # OCP second derivative penalty
+    w_bounds: 10.0  # physical bound violation penalty
+
+  tanh_ocp:
+    n_terms: 5       # tanh 항 수 (R3m, C2m 각각)
+
+  optimizer:
+    global:
+      method: "optuna_tpe"   # optuna_tpe | cma_es
+      n_trials: 200
+      n_startup_trials: 30
+      timeout_s: 3600
+    local:
+      method: "scipy_lbfgsb"  # scipy_lbfgsb | scipy_least_squares
+      max_iter: 500
+
+output:
+  report_dir: "data/reports/stage1_fit"
