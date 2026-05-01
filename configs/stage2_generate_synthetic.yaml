@@ -14,6 +14,8 @@ generation:
     SPMe: 0.90
     DFN: 0.10
 
+  n_workers: 4   # 병렬 시뮬레이션 프로세스 수 (1=직렬)
+
   param_bounds:
     rhombohedral_R3m:
       log10_D_s:

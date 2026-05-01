@@ -41,10 +41,13 @@ class SimulationResult:
 def run_current_drive(pybamm_model, pybamm_params,
                        time_s: np.ndarray,
                        current_a: np.ndarray,
-                       initial_soc: float = 0.5,
                        t_eval: Optional[np.ndarray] = None,
                        solver_kwargs: Optional[dict] = None) -> SimulationResult:
-    """측정 전류 profile로 PyBaMM 시뮬레이션."""
+    """측정 전류 profile로 PyBaMM 시뮬레이션.
+
+    초기 stoichiometry는 pybamm_params의
+    'Initial concentration in positive electrode [mol.m-3]' 파라미터로 결정됩니다.
+    """
     import pybamm
 
     try:
@@ -54,13 +57,13 @@ def run_current_drive(pybamm_model, pybamm_params,
 
         sim = pybamm.Simulation(pybamm_model, parameter_values=pybamm_params)
         t_span = [0, float(t_rel[-1])]
-        sol = sim.solve(t_span, initial_soc=initial_soc,
-                        t_eval=t_eval, **(solver_kwargs or {}))
+        eval_times = t_eval if t_eval is not None else t_span
+        sol = sim.solve(eval_times, **(solver_kwargs or {}))
 
         t_out = sol["Time [s]"].entries
         v_out = sol["Voltage [V]"].entries
         i_out = sol["Current [A]"].entries
-        q_out = np.trapz(np.abs(i_out), t_out / 3600.0) * np.ones_like(t_out)
+        q_out = np.trapezoid(np.abs(i_out), t_out / 3600.0) * np.ones_like(t_out)
 
         return SimulationResult(ok=True, time_s=t_out, voltage_v=v_out,
                                 current_a=i_out, capacity_ah=q_out)
@@ -72,15 +75,18 @@ def run_current_drive(pybamm_model, pybamm_params,
 
 def run_experiment(pybamm_model, pybamm_params,
                     experiment,
-                    initial_soc: float = 0.5,
                     solver_kwargs: Optional[dict] = None) -> SimulationResult:
-    """PyBaMM Experiment 시뮬레이션."""
+    """PyBaMM Experiment 시뮬레이션.
+
+    초기 stoichiometry는 pybamm_params의
+    'Initial concentration in positive electrode [mol.m-3]' 파라미터로 결정됩니다.
+    """
     import pybamm
 
     try:
         sim = pybamm.Simulation(pybamm_model, parameter_values=pybamm_params,
                                  experiment=experiment)
-        sol = sim.solve(initial_soc=initial_soc, **(solver_kwargs or {}))
+        sol = sim.solve(**(solver_kwargs or {}))
 
         t_out = sol["Time [s]"].entries
         v_out = sol["Voltage [V]"].entries

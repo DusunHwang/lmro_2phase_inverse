@@ -27,30 +27,31 @@ def build_optuna_objective(loss_fn: Callable[[Stage1Params], float],
             log10_D_C2m=trial.suggest_float("log10_D_C2m", -18, -12),
             log10_R_C2m=trial.suggest_float("log10_R_C2m", -7.0, -4.5),
             log10_contact_resistance=trial.suggest_float("log10_contact_R", -5, -1),
-            capacity_scale=trial.suggest_float("capacity_scale", 0.7, 1.3),
-            initial_stoichiometry_shift=trial.suggest_float("stoich_shift", -0.08, 0.08),
+            capacity_scale=trial.suggest_float("capacity_scale", 0.7, 1.5),
+            # LMR 사이클은 x≈0.55에서 시작 → shift 범위 확대
+            initial_stoichiometry_shift=trial.suggest_float("stoich_shift", -0.2, 0.3),
         )
 
-        # R3m tanh OCP
+        # R3m tanh OCP: LMR R3m은 b0≈4.5V (고전압 상한)
         p.tanh_R3m = TanhOCPParams(
-            b0=trial.suggest_float("R3m_b0", 2.5, 4.5),
-            b1=trial.suggest_float("R3m_b1", -2.0, 0.0),
-            amps=np.array([trial.suggest_float(f"R3m_A{i}", -0.3, 0.3)
+            b0=trial.suggest_float("R3m_b0", 3.5, 4.8),
+            b1=trial.suggest_float("R3m_b1", -2.5, -0.5),
+            amps=np.array([trial.suggest_float(f"R3m_A{i}", -0.4, 0.4)
                            for i in range(n_tanh_terms)]),
             centers=np.array([trial.suggest_float(f"R3m_c{i}", 0.05, 0.95)
                                for i in range(n_tanh_terms)]),
-            widths=np.abs(np.array([trial.suggest_float(f"R3m_w{i}", 0.01, 0.3)
+            widths=np.abs(np.array([trial.suggest_float(f"R3m_w{i}", 0.01, 0.4)
                                      for i in range(n_tanh_terms)])),
         )
         # C2m tanh OCP
         p.tanh_C2m = TanhOCPParams(
-            b0=trial.suggest_float("C2m_b0", 2.5, 4.5),
-            b1=trial.suggest_float("C2m_b1", -2.0, 0.0),
-            amps=np.array([trial.suggest_float(f"C2m_A{i}", -0.3, 0.3)
+            b0=trial.suggest_float("C2m_b0", 3.0, 4.8),
+            b1=trial.suggest_float("C2m_b1", -2.5, -0.3),
+            amps=np.array([trial.suggest_float(f"C2m_A{i}", -0.4, 0.4)
                            for i in range(n_tanh_terms)]),
             centers=np.array([trial.suggest_float(f"C2m_c{i}", 0.05, 0.95)
                                for i in range(n_tanh_terms)]),
-            widths=np.abs(np.array([trial.suggest_float(f"C2m_w{i}", 0.01, 0.3)
+            widths=np.abs(np.array([trial.suggest_float(f"C2m_w{i}", 0.01, 0.4)
                                      for i in range(n_tanh_terms)])),
         )
 
@@ -132,7 +133,7 @@ def run_scipy_refinement(loss_fn: Callable[[Stage1Params], float],
             log10_D_C2m=float(v[3]), log10_R_C2m=float(v[4]),
             log10_contact_resistance=float(v[5]),
             capacity_scale=float(np.clip(v[6], 0.5, 2.0)),
-            initial_stoichiometry_shift=float(np.clip(v[7], -0.15, 0.15)),
+            initial_stoichiometry_shift=float(np.clip(v[7], -0.3, 0.4)),
         )
         np_tanh = 2 + 3 * n_terms
         p.tanh_R3m = TanhOCPParams.from_vector(v[offset:offset + np_tanh], n_terms)

@@ -90,13 +90,8 @@ def _make_simple_halfcell_params():
     import pybamm
 
     param = pybamm.ParameterValues("Chen2020")
-    # Li metal counter electrode 최소 설정
-    try:
-        param["Lithium counter electrode exchange-current density [A.m-2]"] = 1.0
-        param["Lithium counter electrode conductivity [S.m-1]"] = 1e7
-        param["Lithium counter electrode thickness [m]"] = 250e-6
-    except Exception:
-        pass
+    # Li metal counter electrode 최소 설정 (PyBaMM 26.x 파라미터명)
+    param["Exchange-current density for lithium metal electrode [A.m-2]"] = 1.0
     return param
 
 

@@ -93,8 +93,12 @@ def main():
     if all_summaries:
         import numpy as np
         all_rmse = [s["rmse_v"] for s in all_summaries if s.get("ok")]
-        log.info(f"전체 사이클 RMSE: mean={np.mean(all_rmse)*1000:.1f} mV, "
-                 f"max={np.max(all_rmse)*1000:.1f} mV")
+        if all_rmse:
+            log.info(f"전체 사이클 RMSE: mean={np.mean(all_rmse)*1000:.1f} mV, "
+                     f"max={np.max(all_rmse)*1000:.1f} mV")
+        else:
+            n_ok = sum(1 for s in all_summaries if s.get("ok"))
+            log.warning(f"성공한 forward validation 없음 (총 {len(all_summaries)}개 시도)")
 
         with open(ROOT / cfg.output.residual_summary, "w") as f:
             json.dump(all_summaries, f, indent=2)

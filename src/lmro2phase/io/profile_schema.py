@@ -42,7 +42,7 @@ class ProfileSegment:
     def delta_capacity_ah(self) -> float:
         if self.capacity_ah is not None and len(self.capacity_ah) > 1:
             return float(self.capacity_ah[-1] - self.capacity_ah[0])
-        return float(np.trapz(self.current_a, self.time_s / 3600.0))
+        return float(np.trapezoid(self.current_a, self.time_s / 3600.0))
 
 
 @dataclass

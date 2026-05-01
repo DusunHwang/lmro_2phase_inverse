@@ -50,7 +50,8 @@ def train(model, dataset,
            train_frac: float = 0.9,
            device: str = "auto",
            checkpoint_dir: Optional[Path] = None,
-           use_permutation: bool = True) -> nn.Module:
+           use_permutation: bool = True,
+           dataloader_workers: int = 2) -> nn.Module:
     """학습 메인 루프."""
     import torch.optim as optim
     from torch.optim.lr_scheduler import CosineAnnealingLR
@@ -66,9 +67,11 @@ def train(model, dataset,
     train_ds, val_ds = random_split(dataset, [n_train, n_val])
 
     train_loader = DataLoader(train_ds, batch_size=batch_size, shuffle=True,
-                               num_workers=2, pin_memory=(device == "cuda"))
+                               num_workers=dataloader_workers,
+                               pin_memory=(device == "cuda"))
     val_loader   = DataLoader(val_ds,   batch_size=batch_size, shuffle=False,
-                               num_workers=2, pin_memory=(device == "cuda"))
+                               num_workers=dataloader_workers,
+                               pin_memory=(device == "cuda"))
 
     model = model.to(dev)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)

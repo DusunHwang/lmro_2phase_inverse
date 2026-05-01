@@ -89,9 +89,4 @@ def probe_two_phase_support() -> TwoPhaseStrategy:
 
 def _patch_halfcell_params(param) -> None:
     """Chen2020 파라미터를 positive half-cell용으로 최소 패치."""
-    try:
-        param["Lithium counter electrode exchange-current density [A.m-2]"] = 1.0
-        param["Lithium counter electrode conductivity [S.m-1]"] = 1e7
-        param["Lithium counter electrode thickness [m]"] = 250e-6
-    except Exception:
-        pass
+    param["Exchange-current density for lithium metal electrode [A.m-2]"] = 1.0

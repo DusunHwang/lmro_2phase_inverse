@@ -207,10 +207,13 @@ cd lmro_2phase_inverse
 source .venv/bin/activate
 ```
 
+editable 설치 후에는 `python scripts/...` 대신 `lmro-*` 콘솔 명령도 사용할 수 있습니다.
+
 ### Stage 0 — PyBaMM 환경 확인
 
 ```bash
-python scripts/00_smoke_test_pybamm_halfcell.py
+lmro-smoke
+# 또는: python scripts/00_smoke_test_pybamm_halfcell.py
 ```
 
 확인 항목:
@@ -226,7 +229,7 @@ python scripts/00_smoke_test_pybamm_halfcell.py
 ### Stage 1a — TOYO 파일 파싱
 
 ```bash
-python scripts/01_parse_toyo_ascii.py \
+lmro-parse \
   --input data/raw/toyo/Toyo_LMR_HalfCell_Sample_50cycles.csv \
   --config configs/toyo_ascii.yaml \
   --out_dir data/processed
@@ -237,7 +240,10 @@ python scripts/01_parse_toyo_ascii.py \
 ### Stage 1b — tanh OCP 초기 피팅
 
 ```bash
-python scripts/02_fit_tanh_ocp.py --config configs/stage1_fit_tanh.yaml
+lmro-fit-ocp --config configs/stage1_fit_tanh.yaml
+
+# 빠른 설정 확인
+lmro-fit-ocp --config configs/stage1_fit_tanh_quicktest.yaml
 ```
 
 결과: `data/reports/stage1_fit/`
@@ -249,10 +255,10 @@ python scripts/02_fit_tanh_ocp.py --config configs/stage1_fit_tanh.yaml
 
 ```bash
 # pilot 규모 (1,000개)
-python scripts/03_generate_synthetic_dataset.py
+lmro-generate
 
 # 대규모 (50,000개)
-python scripts/03_generate_synthetic_dataset.py --n_samples 50000
+lmro-generate --n_samples 50000
 ```
 
 결과: `data/synthetic/`
@@ -265,10 +271,10 @@ python scripts/03_generate_synthetic_dataset.py --n_samples 50000
 
 ```bash
 # overfit 확인 (100개, 빠른 검증)
-python scripts/04_train_inverse_model.py --overfit_test
+lmro-train --overfit_test
 
 # 본 학습
-python scripts/04_train_inverse_model.py --config configs/stage3_train_inverse.yaml
+lmro-train --config configs/stage3_train_inverse.yaml
 ```
 
 결과: `data/models/inverse/best_model.pt`
@@ -276,7 +282,7 @@ python scripts/04_train_inverse_model.py --config configs/stage3_train_inverse.y
 ### Stage 4a — 실측 프로파일 추론
 
 ```bash
-python scripts/05_infer_lmr_profile.py --config configs/stage4_infer_validate.yaml
+lmro-infer --config configs/stage4_infer_validate.yaml
 ```
 
 결과: `data/reports/inference/cycle_XXX/`
@@ -286,12 +292,20 @@ python scripts/05_infer_lmr_profile.py --config configs/stage4_infer_validate.ya
 ### Stage 4b — Forward validation
 
 ```bash
-python scripts/06_forward_validate.py --config configs/stage4_infer_validate.yaml
+lmro-validate --config configs/stage4_infer_validate.yaml
 ```
 
 결과:
 - `forward_validation.png` — 측정값 vs 시뮬레이션 비교
 - `residual_summary.json` — RMSE, MAE, 최대 오차
+
+### Stage 5 — 결과 보고서 생성
+
+```bash
+lmro-report
+```
+
+결과: `data/reports/result_report_YYMMDD_HHMMSS/`
 
 ---
 
@@ -308,6 +322,7 @@ lmro_2phase_inverse/
 │   ├── halfcell_lmr_base.yaml      #   LMR 물리 파라미터 초기값
 │   ├── stage0_smoke.yaml
 │   ├── stage1_fit_tanh.yaml
+│   ├── stage1_fit_tanh_quicktest.yaml
 │   ├── stage2_generate_synthetic.yaml
 │   ├── stage3_train_inverse.yaml
 │   └── stage4_infer_validate.yaml
@@ -320,6 +335,9 @@ lmro_2phase_inverse/
 │   └── reports/                    # 각 stage 결과물 및 플롯
 │
 ├── src/lmro2phase/
+│   ├── cli/
+│   │   └── commands.py             # lmro-* 콘솔 엔트리포인트
+│   │
 │   ├── io/
 │   │   ├── toyo_ascii.py           # TOYO 파서 (자동 인코딩/구분자/컬럼 감지)
 │   │   ├── profile_schema.py       # BatteryProfile / ProfileSegment 데이터 구조
@@ -369,7 +387,8 @@ lmro_2phase_inverse/
 │   ├── 03_generate_synthetic_dataset.py
 │   ├── 04_train_inverse_model.py
 │   ├── 05_infer_lmr_profile.py
-│   └── 06_forward_validate.py
+│   ├── 06_forward_validate.py
+│   └── 07_generate_report.py
 │
 └── tests/
     ├── test_toyo_parser.py

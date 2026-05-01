@@ -117,10 +117,11 @@ unit_conversion:
 
 # --- 전류 부호 규약 ---
 current_sign:
-  # TOYO는 충전=양수, 방전=음수인 경우가 많음.
-  # PyBaMM은 방전=양수 convention이 기본이므로 필요시 반전.
-  discharge_positive_in_file: false   # true → PyBaMM 입력 시 부호 반전
-  pybamm_discharge_positive: false    # PyBaMM half-cell convention 맞춤
+  # TOYO: 충전=양수(I>0), 방전=음수(I<0).
+  # PyBaMM positive half-cell: 방전=양수(I>0), 충전=음수(I<0).
+  # → 두 convention이 반대이므로 부호 반전 필요.
+  discharge_positive_in_file: false   # TOYO 파일: 방전=음수
+  pybamm_discharge_positive: true     # PyBaMM: 방전=양수 → 부호 반전 적용
 
 # --- 프로토콜 자동 분리 임계값 ---
 protocol_detection:

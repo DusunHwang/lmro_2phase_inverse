@@ -17,6 +17,10 @@ env/
 # PyBaMM 캐시
 .pybamm/
 
+# 로컬 solver 빌드/설치 산출물
+.idaklu/
+.idaklu_build/
+
 # 데이터 (대용량 파일 제외)
 data/raw/toyo/*.csv
 data/processed/
@@ -43,6 +47,9 @@ Thumbs.db
 
 # 로그
 *.log
+
+# 루트에 잘못 생성된 보고서 산출물
+result_report_*.md
 
 # 임시 파일
 *.tmp

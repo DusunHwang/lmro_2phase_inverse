@@ -51,7 +51,8 @@ class OCPGrid:
     def smooth(self, sigma: float = 2.0) -> "OCPGrid":
         """Gaussian filter로 OCP grid 스무딩."""
         from scipy.ndimage import gaussian_filter1d
-        smoothed = gaussian_filter1d(self.voltage, sigma=sigma)
+        # mode='nearest': 경계를 edge 값으로 패딩 → 경계 아티팩트 방지
+        smoothed = gaussian_filter1d(self.voltage, sigma=sigma, mode='nearest')
         smoothed = np.clip(smoothed, self.voltage_lower, self.voltage_upper)
         return OCPGrid(sto=self.sto.copy(), voltage=smoothed,
                        voltage_lower=self.voltage_lower,

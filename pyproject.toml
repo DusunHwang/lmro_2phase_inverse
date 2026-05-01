@@ -22,11 +22,21 @@ dependencies = [
   "omegaconf",
   "tqdm",
   "charset-normalizer",
-  "pytest",
 ]
+
+[project.scripts]
+lmro-smoke = "lmro2phase.cli.commands:smoke"
+lmro-parse = "lmro2phase.cli.commands:parse_toyo"
+lmro-fit-ocp = "lmro2phase.cli.commands:fit_ocp"
+lmro-generate = "lmro2phase.cli.commands:generate_synthetic"
+lmro-train = "lmro2phase.cli.commands:train_inverse"
+lmro-infer = "lmro2phase.cli.commands:infer_profile"
+lmro-validate = "lmro2phase.cli.commands:forward_validate"
+lmro-report = "lmro2phase.cli.commands:generate_report"
 
 [project.optional-dependencies]
 dev = [
+  "pytest",
   "pytest-cov",
   "ipykernel",
   "jupyterlab",
@@ -37,8 +47,8 @@ testpaths = ["tests"]
 addopts = "-v --tb=short"
 
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.backends.legacy:build"
+requires = ["setuptools>=68,<82"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]

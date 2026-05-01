@@ -28,7 +28,7 @@ fitting:
     n_terms: 5       # tanh 항 수 (R3m, C2m 각각)
 
   optimizer:
-    global:
+    global_search:
       method: "optuna_tpe"   # optuna_tpe | cma_es
       n_trials: 200
       n_startup_trials: 30

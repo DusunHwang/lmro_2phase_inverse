@@ -30,6 +30,7 @@ training:
   scheduler: "cosine"          # cosine | plateau | none
   gradient_clip: 1.0
   device: "auto"               # env.yaml의 torch.device 참조
+  dataloader_workers: 4        # DataLoader 병렬 워커 수
 
   loss_weights:
     scalar_mse: 1.0

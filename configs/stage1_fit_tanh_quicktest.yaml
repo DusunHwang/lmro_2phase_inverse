@@ -1,0 +1,42 @@
+# Stage 1: tanh OCP 초기 fitting 설정 (quick test)
+input:
+  data_file: "data/raw/toyo/Toyo_LMR_HalfCell_Sample_50cycles.csv"
+  toyo_config: "configs/toyo_ascii.yaml"
+  use_cycles: [1, 2, 3]
+  exclude_formation_cycles: [1]
+
+fitting:
+  cycle_selection: "low_c_rate"
+  protocol_blocks:
+    - "cc_charge"
+    - "cv_charge"
+    - "rest"
+    - "cc_discharge"
+
+  loss_weights:
+    w_v_q: 1.0
+    w_v_t: 0.3
+    w_dvdq: 2.0
+    w_dqdv: 2.0
+    w_rest: 0.5
+    w_rate: 1.0
+    w_prior: 0.1
+    w_ocp_smooth: 0.5
+    w_bounds: 10.0
+
+  tanh_ocp:
+    n_terms: 5
+
+  optimizer:
+    global_search:
+      method: "optuna_tpe"
+      n_trials: 150
+      n_startup_trials: 20
+      timeout_s: 900
+      n_jobs: 4        # Optuna 병렬 trial 수 (PyBaMM SUNDIALS 안전: spawn 기반)
+    local:
+      method: "scipy_lbfgsb"
+      max_iter: 300
+
+output:
+  report_dir: "data/reports/stage1_fit"

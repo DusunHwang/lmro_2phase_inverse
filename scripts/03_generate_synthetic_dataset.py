@@ -26,6 +26,8 @@ def main():
     parser.add_argument("--config", default="configs/stage2_generate_synthetic.yaml")
     parser.add_argument("--n_samples", type=int, default=None,
                         help="샘플 수 override (없으면 config 사용)")
+    parser.add_argument("--n_workers", type=int, default=None,
+                        help="병렬 프로세스 수 override (없으면 config 사용)")
     args = parser.parse_args()
 
     from omegaconf import OmegaConf
@@ -83,9 +85,9 @@ def main():
 
     log.info(f"파라미터 샘플링 완료: {len(records)}개")
 
-    # Experiment 생성
+    # Experiment 생성 — 실제 데이터 전압 범위(2.5~4.6V)에 맞춤
     from lmro2phase.physics.protocol_builder import build_standard_experiment
-    experiment = build_standard_experiment(voltage_upper=4.8, voltage_lower=2.0)
+    experiment = build_standard_experiment(voltage_upper=4.5, voltage_lower=2.5)
 
     # Job 생성
     from lmro2phase.generation.batch_simulate import SimJob, run_batch
@@ -106,7 +108,8 @@ def main():
         voltage_max_v=float(cfg.quality_filter.voltage_max_v),
     )
 
-    n_workers = 1  # 안전한 기본값; env.yaml에서 조정
+    n_workers = args.n_workers or int(getattr(cfg.generation, "n_workers", 1))
+    log.info(f"병렬 workers: {n_workers}")
     good, failed = run_batch(jobs, quality_cfg, n_workers=n_workers)
 
     # --- 저장 ---
@@ -123,12 +126,19 @@ def _save_results(good, failed, records, cfg, root: Path):
                 out.metadata_file, out.failed_cases_file]:
         (root / key).parent.mkdir(parents=True, exist_ok=True)
 
-    # params parquet
-    good_records = [g.sim_result for g in good]
-    params_df = pd.DataFrame([{
-        "sample_id": g.sample_id,
-        **{k: v for k, v in vars(g).items() if k != "sim_result"}
-    } for g in good])
+    # params parquet — SampleRecord 필드만 저장 (OCPGrid 등 직렬화 불가 객체 제외)
+    _RECORD_FIELDS = {
+        "sample_id", "log10_D_R3m", "log10_R_R3m", "frac_R3m",
+        "log10_D_C2m", "log10_R_C2m", "log10_contact_resistance",
+        "capacity_scale", "initial_stoichiometry_shift", "ocp_mode",
+    }
+    # sample_id → record 매핑을 records 리스트로부터 생성
+    record_map = {r.sample_id: r for r in records}
+    params_df = pd.DataFrame([
+        {f: getattr(record_map[g.sample_id], f) for f in _RECORD_FIELDS
+         if hasattr(record_map[g.sample_id], f)}
+        for g in good if g.sample_id in record_map
+    ])
     params_df.to_parquet(root / out.params_file, index=False)
 
     # profiles zarr
@@ -138,17 +148,17 @@ def _save_results(good, failed, records, cfg, root: Path):
         for i, g in enumerate(good):
             if g.sim_result:
                 grp = zroot.require_group(str(g.sample_id))
-                grp.create_dataset("time_s", data=g.sim_result.time_s, overwrite=True)
-                grp.create_dataset("voltage_v", data=g.sim_result.voltage_v, overwrite=True)
-                grp.create_dataset("current_a", data=g.sim_result.current_a, overwrite=True)
+                grp["time_s"] = g.sim_result.time_s
+                grp["voltage_v"] = g.sim_result.voltage_v
+                grp["current_a"] = g.sim_result.current_a
 
     # OCP zarr
     zroot_ocp = zarr.open(str(root / out.ocp_profiles_file), mode="w")
     for g in good:
         if g.ocp_R3m and g.ocp_C2m:
             grp = zroot_ocp.require_group(str(g.sample_id))
-            grp.create_dataset("ocp_R3m", data=g.ocp_R3m.voltage, overwrite=True)
-            grp.create_dataset("ocp_C2m", data=g.ocp_C2m.voltage, overwrite=True)
+            grp["ocp_R3m"] = g.ocp_R3m.voltage
+            grp["ocp_C2m"] = g.ocp_C2m.voltage
 
     # failed parquet
     failed_df = pd.DataFrame([

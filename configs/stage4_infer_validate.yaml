@@ -1,6 +1,6 @@
 # Stage 4: Inference & forward validation 설정
 inference:
-  model_checkpoint: "data/models/inverse/best_model.ckpt"
+  model_checkpoint: "data/models/inverse/best_model.pt"
   input_data: "data/raw/toyo/Toyo_LMR_HalfCell_Sample_50cycles.csv"
   toyo_config: "configs/toyo_ascii.yaml"
   use_cycles: null              # null = 전체 사이클

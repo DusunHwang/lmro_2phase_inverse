@@ -43,18 +43,38 @@ ensure_pip() {
     fi
 }
 
+# ─── venv 상태 확인 ───────────────────────────────────────
+# pip shebang이 현재 경로와 다르면 깨진 venv로 판단
+check_venv_healthy() {
+    [ -d "$VENV_DIR" ] || return 1
+    "$VENV_DIR/bin/python" -c "import sys; print('ok')" &>/dev/null || return 1
+    # pip shebang이 현재 VENV_DIR 절대경로를 포함하는지 확인
+    local pip_shebang
+    pip_shebang=$(head -1 "$VENV_DIR/bin/pip" 2>/dev/null || echo "")
+    if echo "$pip_shebang" | grep -q "$SCRIPT_DIR/$VENV_DIR"; then
+        return 0
+    fi
+    return 1
+}
+
 # ─── 가상환경 생성 ────────────────────────────────────────
 create_venv() {
     info "=== [1/4] 가상환경 생성 ==="
 
     if [ -d "$VENV_DIR" ]; then
-        info "  이미 존재: $VENV_DIR (skip)"
-        return 0
+        if check_venv_healthy; then
+            info "  이미 존재하고 정상: $VENV_DIR (skip)"
+            return 0
+        else
+            warn "  $VENV_DIR 가 손상되었습니다 (shebang 경로 불일치). 재생성합니다..."
+            rm -rf "$VENV_DIR"
+        fi
     fi
 
-    # 방법 1: python -m venv (ensurepip 필요)
-    if "$PYTHON" -m venv "$VENV_DIR" &>/dev/null; then
-        info "  python -m venv 성공: $VENV_DIR"
+    # --system-site-packages: 시스템 CUDA 빌드 torch/CUDA 라이브러리 상속
+    # (NVIDIA 커스텀 빌드 torch는 PyPI에 없으므로 시스템 패키지 활용)
+    if "$PYTHON" -m venv --system-site-packages "$VENV_DIR" 2>/dev/null; then
+        info "  python -m venv --system-site-packages 성공: $VENV_DIR"
         return 0
     fi
 
@@ -63,7 +83,7 @@ create_venv() {
     # 방법 2: virtualenv (pip로 설치)
     ensure_pip
     if "$PYTHON" -m pip install virtualenv --user -q; then
-        "$PYTHON" -m virtualenv "$VENV_DIR"
+        "$PYTHON" -m virtualenv --system-site-packages "$VENV_DIR"
         info "  virtualenv 성공: $VENV_DIR"
         return 0
     fi
@@ -92,15 +112,21 @@ create_venv
 info "=== [2/4] pip 업그레이드 ==="
 if [ -n "$VENV_DIR" ]; then
     source "$VENV_DIR/bin/activate"
-    pip install --upgrade pip wheel setuptools -q
+    # setuptools<82: torch 2.x 호환성 요구사항
+    pip install --upgrade pip wheel "setuptools>=68,<82" -q
 else
-    "$PYTHON" -m pip install --upgrade pip wheel setuptools --user -q
+    "$PYTHON" -m pip install --upgrade pip wheel "setuptools>=68,<82" --user -q
     PIP="$PYTHON -m pip"
 fi
 
 # ─── PyTorch 설치 ─────────────────────────────────────────
 info "=== [3/4] PyTorch 설치 ==="
-if [ -n "$TORCH_INDEX_URL" ]; then
+# 시스템에 CUDA 지원 torch가 이미 있으면 재설치 불필요
+# (NVIDIA 커스텀 빌드: PyPI에 해당 wheel 없음)
+if python -c "import torch; assert torch.cuda.is_available(), 'no cuda'" &>/dev/null; then
+    TORCH_VER=$(python -c "import torch; print(torch.__version__)")
+    info "  PyTorch (CUDA) 이미 사용 가능 — 시스템 패키지 상속: $TORCH_VER (skip)"
+elif [ -n "$TORCH_INDEX_URL" ]; then
     pip install torch --index-url "$TORCH_INDEX_URL" -q
     info "  PyTorch (CUDA) 설치 완료"
 else
@@ -110,7 +136,31 @@ fi
 
 # ─── 패키지 설치 ──────────────────────────────────────────
 info "=== [4/4] lmro2phase 패키지 설치 (editable) ==="
-pip install -e ".[dev]" -q
+
+ARCH=$(uname -m)
+if [ "$ARCH" = "aarch64" ]; then
+    # pybammsolvers: aarch64에 pre-built wheel 없음, cmake 빌드 시도
+    # 빌드 실패 시 pybamm --no-deps 후 수동 의존성 설치로 fallback
+    info "  aarch64 감지: pybamm 설치 전략 적용..."
+    # pybammsolvers: aarch64에서 cmake 빌드 실패 가능 — 실패해도 계속 진행
+    # (pybamm은 scipy/casadi solver로 동작, IDAKLU 없어도 무방)
+    info "  pybammsolvers 설치 시도 (실패 시 scipy solver 사용)..."
+    pip install "pybammsolvers>=0.6.0,<0.7.0" -q || \
+        warn "  pybammsolvers 빌드 실패 — scipy solver로 계속 진행"
+
+    # pybamm + 핵심 의존성 (xarray 포함), pybammsolvers는 위에서 별도 처리
+    pip install "pybamm>=26.4,<27" --no-deps -q
+    pip install anytree casadi pandas scipy sympy typing_extensions \
+        "xarray>=2022.6.0" -q
+
+    pip install -e ".[dev]" --no-deps -q
+    # lmro2phase 의존성을 pybamm 제외하고 설치
+    pip install numpy scipy pandas polars pyarrow zarr h5py scikit-learn \
+        lightning optuna matplotlib "pydantic>=2.0" omegaconf tqdm \
+        charset-normalizer pytest pytest-cov ipykernel jupyterlab -q
+else
+    pip install -e ".[dev]" -q
+fi
 
 # ─── 확인 ────────────────────────────────────────────────
 echo ""

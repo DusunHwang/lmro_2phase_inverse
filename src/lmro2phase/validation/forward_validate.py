@@ -68,11 +68,13 @@ def validate_forward(predicted_params: dict,
         log.warning(f"Forward validation 시뮬레이션 실패: {result.error}")
         return {"ok": False, "error": result.error}
 
-    # 잔차 계산
+    # 잔차 계산 — 시뮬레이션 범위 내 데이터만 평가
     t_exp = profile.time_s
     v_exp = profile.voltage_v
-    v_sim_interp = interp1d(result.time_s, result.voltage_v,
-                             bounds_error=False, fill_value="extrapolate")(t_exp)
+    t_rel = t_exp - t_exp[0]
+    t_sim_rel = result.time_s - result.time_s[0]
+    # 시뮬레이션이 조기 종료된 경우 경계값으로 채움 (외삽 오류 방지)
+    v_sim_interp = np.interp(t_rel, t_sim_rel, result.voltage_v)
 
     residual = v_sim_interp - v_exp
     return {
@@ -80,8 +82,8 @@ def validate_forward(predicted_params: dict,
         "rmse_v": float(np.sqrt(np.mean(residual ** 2))),
         "mae_v": float(np.mean(np.abs(residual))),
         "max_err_v": float(np.max(np.abs(residual))),
-        "time_s": result.time_s.tolist(),
-        "voltage_sim": result.voltage_v.tolist(),
+        "time_s": t_exp.tolist(),         # experimental time axis
+        "voltage_sim": v_sim_interp.tolist(),  # sim interpolated to exp times
         "voltage_exp": v_exp.tolist(),
         "residual": residual.tolist(),
     }

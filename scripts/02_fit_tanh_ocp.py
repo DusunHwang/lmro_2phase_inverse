@@ -70,11 +70,14 @@ def main():
         return compute_loss(params, cycle_profile, model, weights)
 
     # --- Global search ---
-    log.info(f"Optuna global search ({cfg.fitting.optimizer.global_.n_trials} trials)...")
+    gs = cfg.fitting.optimizer.global_search
+    n_jobs = int(getattr(gs, "n_jobs", 1))
+    log.info(f"Optuna global search ({gs.n_trials} trials, n_jobs={n_jobs})...")
     best = run_optuna_search(
         loss_fn,
-        n_trials=int(cfg.fitting.optimizer.global_.n_trials),
-        timeout_s=float(cfg.fitting.optimizer.global_.timeout_s),
+        n_trials=int(gs.n_trials),
+        n_jobs=n_jobs,
+        timeout_s=float(gs.timeout_s),
         n_tanh_terms=n_terms,
     )
     log.info(f"  Optuna best loss: {loss_fn(best):.6f}")

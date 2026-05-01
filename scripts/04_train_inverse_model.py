@@ -90,6 +90,7 @@ def main():
             device=str(cfg.training.device),
             checkpoint_dir=ROOT / cfg.output.checkpoint_dir,
             use_permutation=bool(cfg.training.loss_weights.permutation_invariant),
+            dataloader_workers=int(getattr(cfg.training, "dataloader_workers", 2)),
         )
 
 
