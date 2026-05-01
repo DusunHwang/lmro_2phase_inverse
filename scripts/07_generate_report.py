@@ -51,7 +51,11 @@ def md_img(caption: str, rel_path: str) -> str:
 
 def dqdv(voltage: np.ndarray, capacity_ah: np.ndarray,
           window: int = 5, polyorder: int = 3) -> tuple[np.ndarray, np.ndarray]:
-    """dQ/dV 계산 (Savitzky-Golay 스무딩, V 단조증가 보장)."""
+    """dQ/dV 계산 (Savitzky-Golay 스무딩, V 단조증가 보장).
+
+    반환값은 전압 오름차순 정렬 기준의 dQ/dV (mAh/V).
+    방전의 경우 호출측에서 부호를 반전(-) 하면 관습적 양수 피크를 얻는다.
+    """
     from scipy.signal import savgol_filter
     # 전압 단조증가 순 정렬
     idx = np.argsort(voltage)
@@ -64,9 +68,20 @@ def dqdv(voltage: np.ndarray, capacity_ah: np.ndarray,
     if len(v) < window + 1:
         return v, np.gradient(q, v)
 
-    q_smooth = savgol_filter(q, min(window, len(q) if len(q) % 2 == 1 else len(q) - 1), polyorder)
+    w = min(window, len(q) if len(q) % 2 == 1 else len(q) - 1)
+    q_smooth = savgol_filter(q, w, polyorder)
     dqdv_vals = np.gradient(q_smooth, v)
     return v, dqdv_vals
+
+
+def half_cycle_q_ah(current_a: np.ndarray, time_s: np.ndarray,
+                     mask: np.ndarray) -> np.ndarray:
+    """반사이클(충전 또는 방전) 시작점을 0으로 리셋한 누적 용량 (Ah)."""
+    curr = current_a[mask]
+    t = time_s[mask]
+    if len(curr) < 2:
+        return np.zeros(len(curr))
+    return np.cumsum(np.abs(curr) * np.gradient(t) / 3600)
 
 
 def load_profile():
@@ -102,17 +117,20 @@ def section_input_data(profile) -> str:
         cyc = profile.select_cycle(cyc_idx)
         color = cmap(i / max(n_cyc - 1, 1))
         t = cyc.time_s
-        q_cum = np.cumsum(np.abs(cyc.current_a) * np.gradient(t) / 3600) * 1000  # mAh
 
-        chg = cyc.current_a < 0   # TOYO: charge = negative current
-        dchg = cyc.current_a > 0
+        chg = cyc.current_a < 0   # TOYO+변환 후: 충전=음전류
+        dchg = cyc.current_a > 0  # 방전=양전류
         if chg.any():
-            axes[0].plot(q_cum[chg], cyc.voltage_v[chg], color=color, linewidth=0.8, alpha=0.7)
+            q_chg = half_cycle_q_ah(cyc.current_a, t, chg) * 1000  # mAh, 0-리셋
+            axes[0].plot(q_chg, cyc.voltage_v[chg], color=color, linewidth=0.8, alpha=0.7)
         if dchg.any():
-            axes[1].plot(q_cum[dchg], cyc.voltage_v[dchg], color=color, linewidth=0.8, alpha=0.7)
+            q_dchg = half_cycle_q_ah(cyc.current_a, t, dchg) * 1000  # mAh, 0-리셋
+            axes[1].plot(q_dchg, cyc.voltage_v[dchg], color=color, linewidth=0.8, alpha=0.7)
 
-    for ax, title in zip(axes, ["Charge Q-V", "Discharge Q-V"]):
-        ax.set_xlabel("Capacity (mAh)")
+    for ax, (title, xlabel) in zip(axes, [
+            ("Charge Q-V", "Charge Capacity (mAh)"),
+            ("Discharge Q-V", "Discharge Capacity (mAh)")]):
+        ax.set_xlabel(xlabel)
         ax.set_ylabel("Voltage (V)")
         ax.set_title(title)
         ax.grid(True, alpha=0.3)
@@ -132,22 +150,26 @@ def section_input_data(profile) -> str:
     for ci, (cyc_idx, col) in enumerate(zip(rep_cycles, colors_rep)):
         cyc = profile.select_cycle(cyc_idx)
         t = cyc.time_s
-        q_cum = np.cumsum(np.abs(cyc.current_a) * np.gradient(t) / 3600)  # Ah
         chg = cyc.current_a < 0
         dchg = cyc.current_a > 0
         label = f"Cycle {cyc_idx}"
-        win = max(3, min(7, (chg.sum() // 2) | 1))  # odd window
         if chg.sum() > 5:
-            v_c, dq_c = dqdv(cyc.voltage_v[chg], q_cum[chg], window=win)
+            win = max(3, min(7, (chg.sum() // 2) | 1))
+            q_chg = half_cycle_q_ah(cyc.current_a, t, chg)  # 0-리셋, Ah
+            v_c, dq_c = dqdv(cyc.voltage_v[chg], q_chg, window=win)
             axes[0].plot(v_c, dq_c * 1000, color=col, label=label, linewidth=1.2)
         if dchg.sum() > 5:
-            v_d, dq_d = dqdv(cyc.voltage_v[dchg], q_cum[dchg], window=win)
-            axes[1].plot(v_d, dq_d * 1000, color=col, label=label, linewidth=1.2)
+            win = max(3, min(7, (dchg.sum() // 2) | 1))
+            q_dchg = half_cycle_q_ah(cyc.current_a, t, dchg)  # 0-리셋, Ah
+            v_d, dq_d = dqdv(cyc.voltage_v[dchg], q_dchg, window=win)
+            # 방전 dQ/dV: 전압 오름차순 정렬 기준 음수 → 관습적 양수 피크로 반전
+            axes[1].plot(v_d, -dq_d * 1000, color=col, label=label, linewidth=1.2)
 
-    for ax, title in zip(axes, ["Charge dQ/dV", "Discharge dQ/dV"]):
+    for ax, title in zip(axes, ["Charge dQ/dV", "Discharge dQ/dV (negated to positive)"]):
         ax.set_xlabel("Voltage (V)")
         ax.set_ylabel("dQ/dV (mAh/V)")
         ax.set_title(title)
+        ax.axhline(0, color="k", linewidth=0.5, linestyle="--", alpha=0.4)
         ax.legend(fontsize=8)
         ax.grid(True, alpha=0.3)
     fig.suptitle("dQ/dV — Representative Cycles", fontsize=13)
@@ -312,29 +334,51 @@ def _stage1_fit_overlay(profile, bp, tp_r3m, tp_c2m) -> str:
         model = build_halfcell_model(ModelType.SPMe)
         result = run_current_drive(model, pv, cyc1.time_s, cyc1.current_a)
 
-        fig, axes = plt.subplots(1, 2, figsize=(13, 5))
+        fig, axes = plt.subplots(1, 3, figsize=(18, 5))
         t_exp = cyc1.time_s
-        q_exp = np.cumsum(np.abs(cyc1.current_a) * np.gradient(t_exp) / 3600) * 1000
+        chg_exp = cyc1.current_a < 0
+        dchg_exp = cyc1.current_a > 0
 
-        axes[0].plot(q_exp, cyc1.voltage_v, "k-", label="Measured", linewidth=1.5)
+        # ── 충전 Q-V ──
+        if chg_exp.any():
+            q_chg_exp = half_cycle_q_ah(cyc1.current_a, t_exp, chg_exp) * 1000
+            axes[0].plot(q_chg_exp, cyc1.voltage_v[chg_exp], "k-", label="Measured", linewidth=1.5)
         if result.ok:
             t_sim = result.time_s
-            q_sim = np.cumsum(np.abs(result.current_a) * np.gradient(t_sim) / 3600) * 1000
-            axes[0].plot(q_sim, result.voltage_v, "r--", label="Stage1 Sim", linewidth=1.5)
-        axes[0].set_xlabel("Capacity (mAh)")
+            chg_sim = result.current_a < 0
+            if chg_sim.any():
+                q_chg_sim = half_cycle_q_ah(result.current_a, t_sim, chg_sim) * 1000
+                axes[0].plot(q_chg_sim, result.voltage_v[chg_sim], "r--", label="Stage1 Sim", linewidth=1.5)
+        axes[0].set_xlabel("Charge Capacity (mAh)")
         axes[0].set_ylabel("Voltage (V)")
-        axes[0].set_title("Cycle 1 — Q-V")
+        axes[0].set_title("Cycle 1 — Charge Q-V")
         axes[0].legend()
         axes[0].grid(True, alpha=0.3)
 
-        axes[1].plot(t_exp / 3600, cyc1.voltage_v, "k-", label="Measured", linewidth=1.5)
+        # ── 방전 Q-V ──
+        if dchg_exp.any():
+            q_dchg_exp = half_cycle_q_ah(cyc1.current_a, t_exp, dchg_exp) * 1000
+            axes[1].plot(q_dchg_exp, cyc1.voltage_v[dchg_exp], "k-", label="Measured", linewidth=1.5)
         if result.ok:
-            axes[1].plot(t_sim / 3600, result.voltage_v, "r--", label="Stage1 Sim", linewidth=1.5)
-        axes[1].set_xlabel("Time (h)")
+            dchg_sim = result.current_a > 0
+            if dchg_sim.any():
+                q_dchg_sim = half_cycle_q_ah(result.current_a, t_sim, dchg_sim) * 1000
+                axes[1].plot(q_dchg_sim, result.voltage_v[dchg_sim], "r--", label="Stage1 Sim", linewidth=1.5)
+        axes[1].set_xlabel("Discharge Capacity (mAh)")
         axes[1].set_ylabel("Voltage (V)")
-        axes[1].set_title("Cycle 1 — V-t")
+        axes[1].set_title("Cycle 1 — Discharge Q-V")
         axes[1].legend()
         axes[1].grid(True, alpha=0.3)
+
+        # ── V-t ──
+        axes[2].plot(t_exp / 3600, cyc1.voltage_v, "k-", label="Measured", linewidth=1.5)
+        if result.ok:
+            axes[2].plot(t_sim / 3600, result.voltage_v, "r--", label="Stage1 Sim", linewidth=1.5)
+        axes[2].set_xlabel("Time (h)")
+        axes[2].set_ylabel("Voltage (V)")
+        axes[2].set_title("Cycle 1 — V-t")
+        axes[2].legend()
+        axes[2].grid(True, alpha=0.3)
 
         plt.tight_layout()
         return savefig("fig_04_stage1_fit_overlay.png")
@@ -716,22 +760,48 @@ def _vt_comparison(profile, rep_cycles: list[int], inf_dir: Path) -> str:
 
 
 def _qv_comparison(profile, rep_cycles: list[int], inf_dir: Path) -> str:
-    fig, axes = plt.subplots(1, len(rep_cycles), figsize=(4 * len(rep_cycles), 5), squeeze=False)
+    n = len(rep_cycles)
+    fig, axes = plt.subplots(2, n, figsize=(4 * n, 9), squeeze=False)
+    fig.text(0.02, 0.75, "Charge Q-V", va="center", rotation="vertical", fontsize=11, fontweight="bold")
+    fig.text(0.02, 0.27, "Discharge Q-V", va="center", rotation="vertical", fontsize=11, fontweight="bold")
+
     for col, cyc_idx in enumerate(rep_cycles):
         cyc, result = _load_cycle_validation_data(profile, cyc_idx, inf_dir)
         t_exp = cyc.time_s
-        q_exp = np.cumsum(np.abs(cyc.current_a) * np.gradient(t_exp) / 3600) * 1000
-        axes[0, col].plot(q_exp, cyc.voltage_v, "k-", linewidth=1.5, label="Measured")
+        chg_exp = cyc.current_a < 0
+        dchg_exp = cyc.current_a > 0
+
+        # ── 충전 Q-V (row 0) ──
+        if chg_exp.any():
+            q_chg = half_cycle_q_ah(cyc.current_a, t_exp, chg_exp) * 1000
+            axes[0, col].plot(q_chg, cyc.voltage_v[chg_exp], "k-", linewidth=1.5, label="Measured")
         if result and result.ok:
             t_sim = result.time_s
-            q_sim = np.cumsum(np.abs(result.current_a) * np.gradient(t_sim) / 3600) * 1000
-            axes[0, col].plot(q_sim, result.voltage_v, "r--", linewidth=1.5, label="Sim")
+            chg_sim = result.current_a < 0
+            if chg_sim.any():
+                q_chg_sim = half_cycle_q_ah(result.current_a, t_sim, chg_sim) * 1000
+                axes[0, col].plot(q_chg_sim, result.voltage_v[chg_sim], "r--", linewidth=1.5, label="Sim")
         axes[0, col].set_title(f"Cycle {cyc_idx}", fontsize=10)
-        axes[0, col].set_xlabel("Capacity (mAh)")
+        axes[0, col].set_xlabel("Charge Capacity (mAh)")
         axes[0, col].set_ylabel("Voltage (V)")
         axes[0, col].legend(fontsize=7)
         axes[0, col].grid(True, alpha=0.3)
-    plt.tight_layout()
+
+        # ── 방전 Q-V (row 1) ──
+        if dchg_exp.any():
+            q_dchg = half_cycle_q_ah(cyc.current_a, t_exp, dchg_exp) * 1000
+            axes[1, col].plot(q_dchg, cyc.voltage_v[dchg_exp], "k-", linewidth=1.5, label="Measured")
+        if result and result.ok:
+            dchg_sim = result.current_a > 0
+            if dchg_sim.any():
+                q_dchg_sim = half_cycle_q_ah(result.current_a, t_sim, dchg_sim) * 1000
+                axes[1, col].plot(q_dchg_sim, result.voltage_v[dchg_sim], "r--", linewidth=1.5, label="Sim")
+        axes[1, col].set_xlabel("Discharge Capacity (mAh)")
+        axes[1, col].set_ylabel("Voltage (V)")
+        axes[1, col].legend(fontsize=7)
+        axes[1, col].grid(True, alpha=0.3)
+
+    plt.tight_layout(rect=[0.04, 0, 1, 1])
     return savefig("fig_09_qv_comparison.png")
 
 
@@ -740,26 +810,28 @@ def _dqdv_comparison(profile, rep_cycles: list[int], inf_dir: Path) -> str:
     for col, cyc_idx in enumerate(rep_cycles):
         cyc, result = _load_cycle_validation_data(profile, cyc_idx, inf_dir)
         t_exp = cyc.time_s
-        q_exp = np.cumsum(np.abs(cyc.current_a) * np.gradient(t_exp) / 3600)
         dchg = cyc.current_a > 0
         win = max(3, min(7, (dchg.sum() // 2) | 1))
         if dchg.sum() > 5:
-            v_d, dq_d = dqdv(cyc.voltage_v[dchg], q_exp[dchg], window=win)
-            axes[0, col].plot(v_d, dq_d * 1000, "k-", linewidth=1.5, label="Measured")
+            q_dchg = half_cycle_q_ah(cyc.current_a, t_exp, dchg)  # 0-리셋, Ah
+            v_d, dq_d = dqdv(cyc.voltage_v[dchg], q_dchg, window=win)
+            axes[0, col].plot(v_d, -dq_d * 1000, "k-", linewidth=1.5, label="Measured")
         if result and result.ok:
             i_sim = result.current_a
             t_sim = result.time_s
-            q_sim = np.cumsum(np.abs(i_sim) * np.gradient(t_sim) / 3600)
             dchg_sim = i_sim > 0
             win_s = max(3, min(11, (dchg_sim.sum() // 2) | 1))
             if dchg_sim.sum() > 5:
-                v_ds, dq_ds = dqdv(result.voltage_v[dchg_sim], q_sim[dchg_sim], window=win_s)
-                axes[0, col].plot(v_ds, dq_ds * 1000, "r--", linewidth=1.5, label="Sim")
-        axes[0, col].set_title(f"Cycle {cyc_idx} dQ/dV", fontsize=10)
+                q_dchg_sim = half_cycle_q_ah(i_sim, t_sim, dchg_sim)
+                v_ds, dq_ds = dqdv(result.voltage_v[dchg_sim], q_dchg_sim, window=win_s)
+                axes[0, col].plot(v_ds, -dq_ds * 1000, "r--", linewidth=1.5, label="Sim")
+        axes[0, col].axhline(0, color="k", linewidth=0.5, linestyle="--", alpha=0.4)
+        axes[0, col].set_title(f"Cycle {cyc_idx} — Discharge dQ/dV", fontsize=10)
         axes[0, col].set_xlabel("Voltage (V)")
         axes[0, col].set_ylabel("dQ/dV (mAh/V)")
         axes[0, col].legend(fontsize=7)
         axes[0, col].grid(True, alpha=0.3)
+    fig.suptitle("Discharge dQ/dV Comparison (Measured vs Simulated)", fontsize=12)
     plt.tight_layout()
     return savefig("fig_10_dqdv_comparison.png")
 
