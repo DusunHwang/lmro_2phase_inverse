@@ -148,6 +148,23 @@ if [ "$ARCH" = "aarch64" ]; then
     pip install "pybammsolvers>=0.6.0,<0.7.0" -q || \
         warn "  pybammsolvers 빌드 실패 — scipy solver로 계속 진행"
 
+    # idaklu C++ 확장이 로드 가능한지 확인 (casadi ABI 불일치 등으로 실패할 수 있음)
+    # 실패 시 scripts/patches/의 Python/casadi stub을 자동으로 적용
+    # find_spec은 __init__.py를 실행하지 않으므로 .so 로드 실패와 무관하게 경로 획득 가능
+    PYBAMMSOL_DIR=$(python -c "import importlib.util; spec = importlib.util.find_spec('pybammsolvers'); print(spec.submodule_search_locations[0])" 2>/dev/null || true)
+    if [ -n "$PYBAMMSOL_DIR" ] && ! python -c "from pybammsolvers import idaklu; _ = idaklu.VectorRealtypeNdArray" &>/dev/null; then
+        warn "  idaklu C++ 확장 로드 실패 — Python/casadi stub 적용 중..."
+        # C++ .so 파일이 있으면 .so.bak 으로 이름 변경 (Python .py가 우선 사용되도록)
+        for so_file in "$PYBAMMSOL_DIR"/idaklu*.so; do
+            [ -f "$so_file" ] && mv "$so_file" "${so_file}.bak" && \
+                info "    ${so_file} → ${so_file}.bak"
+        done
+        # Python stub 설치
+        cp "$SCRIPT_DIR/scripts/patches/idaklu_stub.py" "$PYBAMMSOL_DIR/idaklu.py"
+        cp "$SCRIPT_DIR/scripts/patches/pybammsolvers_init.py" "$PYBAMMSOL_DIR/__init__.py"
+        info "    idaklu Python stub 적용 완료"
+    fi
+
     # pybamm + 핵심 의존성 (xarray 포함), pybammsolvers는 위에서 별도 처리
     pip install "pybamm>=26.4,<27" --no-deps -q
     pip install anytree casadi pandas scipy sympy typing_extensions \
