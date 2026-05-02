@@ -38,6 +38,12 @@ class SimulationResult:
         return bool((self.voltage_v >= v_min).all() and (self.voltage_v <= v_max).all())
 
 
+def _make_solver():
+    """CasadiSolver (safe mode) — IDAKLU unavailable on this platform."""
+    import pybamm
+    return pybamm.CasadiSolver(mode="safe")
+
+
 def run_current_drive(pybamm_model, pybamm_params,
                        time_s: np.ndarray,
                        current_a: np.ndarray,
@@ -55,7 +61,9 @@ def run_current_drive(pybamm_model, pybamm_params,
         current_interp = pybamm.Interpolant(t_rel, current_a, pybamm.t, extrapolate=False)
         pybamm_params["Current function [A]"] = current_interp
 
-        sim = pybamm.Simulation(pybamm_model, parameter_values=pybamm_params)
+        solver = _make_solver()
+        sim = pybamm.Simulation(pybamm_model, parameter_values=pybamm_params,
+                                 solver=solver)
         t_span = [0, float(t_rel[-1])]
         eval_times = t_eval if t_eval is not None else t_span
         sol = sim.solve(eval_times, **(solver_kwargs or {}))
@@ -68,7 +76,6 @@ def run_current_drive(pybamm_model, pybamm_params,
         return SimulationResult(ok=True, time_s=t_out, voltage_v=v_out,
                                 current_a=i_out, capacity_ah=q_out)
     except Exception as e:
-        msg = traceback.format_exc()
         log.debug(f"current_drive 시뮬레이션 실패: {e}")
         return SimulationResult(ok=False, error=str(e))
 
@@ -84,8 +91,9 @@ def run_experiment(pybamm_model, pybamm_params,
     import pybamm
 
     try:
+        solver = _make_solver()
         sim = pybamm.Simulation(pybamm_model, parameter_values=pybamm_params,
-                                 experiment=experiment)
+                                 experiment=experiment, solver=solver)  # noqa: E501
         sol = sim.solve(**(solver_kwargs or {}))
 
         t_out = sol["Time [s]"].entries

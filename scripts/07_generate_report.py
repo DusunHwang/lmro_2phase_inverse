@@ -90,6 +90,55 @@ def load_profile():
     return parser.parse(ROOT / "data/raw/toyo/Toyo_LMR_HalfCell_Sample_50cycles.csv")
 
 
+def classify_cycles(profile, tol_frac: float = 0.05) -> dict:
+    """사이클을 C-rate 그룹으로 분류.
+
+    Returns:
+        {
+          "varied": [(cyc_idx, i_mean_ma), ...],   # C-rate가 서로 다른 초반 사이클
+          "repeated": [(cyc_idx, i_mean_ma), ...], # 동일 C-rate 반복 사이클
+          "dominant_i_ma": float,                  # 반복 사이클의 대표 전류 (mA)
+        }
+    """
+    cycles = profile.get_cycles()
+    i_means = {}
+    for cyc_idx in cycles:
+        cyc = profile.select_cycle(cyc_idx)
+        dchg = cyc.current_a > 0
+        if dchg.any():
+            i_means[cyc_idx] = float(np.mean(np.abs(cyc.current_a[dchg])) * 1000)
+        else:
+            i_means[cyc_idx] = 0.0
+
+    all_vals = np.array(list(i_means.values()))
+    # 최빈 전류 = 반복 사이클의 대표값
+    counts, edges = np.histogram(all_vals, bins=30)
+    dominant_i = float(edges[np.argmax(counts)] + (edges[1] - edges[0]) / 2)
+
+    varied, repeated = [], []
+    for cyc_idx in cycles:
+        i = i_means[cyc_idx]
+        if abs(i - dominant_i) / max(dominant_i, 1e-9) > tol_frac:
+            varied.append((cyc_idx, i))
+        else:
+            repeated.append((cyc_idx, i))
+
+    return {"varied": varied, "repeated": repeated, "dominant_i_ma": dominant_i}
+
+
+def pick_repeated_display(repeated: list, max_n: int = 10) -> list[int]:
+    """반복 사이클 중 균등 간격으로 최대 max_n개 선택."""
+    idxs = [c for c, _ in repeated]
+    if len(idxs) <= max_n:
+        return idxs
+    step = len(idxs) / max_n
+    selected = [idxs[int(round(i * step))] for i in range(max_n)]
+    # 마지막 사이클 포함
+    if idxs[-1] not in selected:
+        selected[-1] = idxs[-1]
+    return sorted(set(selected))
+
+
 # ──────────────────────────────────────────────
 # § 2: 입력 데이터
 # ──────────────────────────────────────────────
@@ -103,29 +152,57 @@ def section_input_data(profile) -> str:
     for cyc_idx in cycles:
         cyc = profile.select_cycle(cyc_idx)
         q_total = np.trapezoid(np.abs(cyc.current_a), cyc.time_s / 3600) * 1000  # mAh
-        i_mean = np.mean(np.abs(cyc.current_a)) * 1000  # mA
+        dchg = cyc.current_a > 0
+        i_dchg_ma = float(np.mean(np.abs(cyc.current_a[dchg])) * 1000) if dchg.any() else 0.0
         rows.append({"cycle": cyc_idx, "n_pts": len(cyc),
                       "q_mah": q_total, "v_min": cyc.voltage_v.min(),
                       "v_max": cyc.voltage_v.max(),
+                      "i_dchg_ma": i_dchg_ma,
                       "duration_h": (cyc.time_s[-1] - cyc.time_s[0]) / 3600})
     stats_df = pd.DataFrame(rows)
 
-    # ── Fig 1: 전 사이클 Q-V (충전/방전 분리) ──
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    cmap = plt.colormaps["plasma"].resampled(n_cyc)
-    for i, cyc_idx in enumerate(cycles):
-        cyc = profile.select_cycle(cyc_idx)
-        color = cmap(i / max(n_cyc - 1, 1))
-        t = cyc.time_s
+    # C-rate 그룹 분류
+    cgroups = classify_cycles(profile)
+    varied_cycs  = [c for c, _ in cgroups["varied"]]   # C-rate 상이 → 전부 표시
+    repeated_cycs = [c for c, _ in cgroups["repeated"]] # 동일 반복 → 간격 샘플링
+    rep_display  = pick_repeated_display(cgroups["repeated"], max_n=10)
+    dom_i        = cgroups["dominant_i_ma"]
+    log.info(f"C-rate 변동 사이클: {varied_cycs}, 반복 사이클(표시): {rep_display}")
 
-        chg = cyc.current_a < 0   # TOYO+변환 후: 충전=음전류
-        dchg = cyc.current_a > 0  # 방전=양전류
+    # ── Fig 1: Q-V 오버레이 (충전/방전 분리, 그룹별 다른 스타일) ──
+    #   · C-rate 변동 사이클: 개별 색상 + 레이블 (tab10)
+    #   · 반복 사이클: plasma 컬러맵, 선택된 간격만
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    colors_varied = plt.cm.tab10(np.linspace(0, 0.9, max(len(varied_cycs), 1)))
+    cmap_rep = plt.colormaps["plasma"].resampled(max(len(rep_display), 2))
+
+    for idx, cyc_idx in enumerate(varied_cycs):
+        cyc = profile.select_cycle(cyc_idx)
+        t = cyc.time_s
+        chg = cyc.current_a < 0
+        dchg = cyc.current_a > 0
+        col = colors_varied[idx]
+        i_ma = rows[cyc_idx - 1]["i_dchg_ma"]
+        lbl = f"C{cyc_idx} ({i_ma:.2f} mA)"
         if chg.any():
-            q_chg = half_cycle_q_ah(cyc.current_a, t, chg) * 1000  # mAh, 0-리셋
-            axes[0].plot(q_chg, cyc.voltage_v[chg], color=color, linewidth=0.8, alpha=0.7)
+            axes[0].plot(half_cycle_q_ah(cyc.current_a, t, chg) * 1000,
+                         cyc.voltage_v[chg], color=col, linewidth=1.2, label=lbl, zorder=3)
         if dchg.any():
-            q_dchg = half_cycle_q_ah(cyc.current_a, t, dchg) * 1000  # mAh, 0-리셋
-            axes[1].plot(q_dchg, cyc.voltage_v[dchg], color=color, linewidth=0.8, alpha=0.7)
+            axes[1].plot(half_cycle_q_ah(cyc.current_a, t, dchg) * 1000,
+                         cyc.voltage_v[dchg], color=col, linewidth=1.2, label=lbl, zorder=3)
+
+    for ri, cyc_idx in enumerate(rep_display):
+        cyc = profile.select_cycle(cyc_idx)
+        t = cyc.time_s
+        chg = cyc.current_a < 0
+        dchg = cyc.current_a > 0
+        col = cmap_rep(ri / max(len(rep_display) - 1, 1))
+        if chg.any():
+            axes[0].plot(half_cycle_q_ah(cyc.current_a, t, chg) * 1000,
+                         cyc.voltage_v[chg], color=col, linewidth=0.7, alpha=0.7)
+        if dchg.any():
+            axes[1].plot(half_cycle_q_ah(cyc.current_a, t, dchg) * 1000,
+                         cyc.voltage_v[dchg], color=col, linewidth=0.7, alpha=0.7)
 
     for ax, (title, xlabel) in zip(axes, [
             ("Charge Q-V", "Charge Capacity (mAh)"),
@@ -134,58 +211,75 @@ def section_input_data(profile) -> str:
         ax.set_ylabel("Voltage (V)")
         ax.set_title(title)
         ax.grid(True, alpha=0.3)
+        if varied_cycs:
+            ax.legend(fontsize=7, title="C-rate variation", loc="best")
 
+    # 반복 사이클 colorbar
     sm = plt.cm.ScalarMappable(cmap="plasma",
-                                norm=plt.Normalize(vmin=1, vmax=n_cyc))
+                                norm=plt.Normalize(vmin=min(rep_display), vmax=max(rep_display)))
     sm.set_array([])
-    fig.colorbar(sm, ax=axes, label="Cycle #", shrink=0.8)
-    fig.suptitle("TOYO LMR Half-Cell — All Cycles Q-V", fontsize=13)
+    fig.colorbar(sm, ax=axes, label=f"Repeated cycles (every ~{max(1,len(repeated_cycs)//10)} cyc)", shrink=0.8)
+    fig.suptitle(f"TOYO LMR Half-Cell — Q-V Overview  "
+                 f"[C-rate varied: cyc {varied_cycs}  |  repeated @ {dom_i:.2f} mA: cyc {rep_display}]",
+                 fontsize=11)
     fig1 = savefig("fig_01_qv_all_cycles.png")
     log.info("fig_01 저장")
 
-    # ── Fig 2: 대표 사이클 dQ/dV ──
-    rep_cycles = [c for c in [1, 10, 20, 40, 50] if c in cycles]
+    # ── Fig 2: dQ/dV — C-rate 변동 사이클 전부 + 반복 사이클 간격 샘플 ──
+    dqdv_cycles = varied_cycs + rep_display
+    n_dqdv = len(dqdv_cycles)
+    colors_dqdv = (list(colors_varied) +
+                   [cmap_rep(i / max(len(rep_display) - 1, 1)) for i in range(len(rep_display))])
+
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    colors_rep = plt.cm.tab10(np.linspace(0, 0.9, len(rep_cycles)))
-    for ci, (cyc_idx, col) in enumerate(zip(rep_cycles, colors_rep)):
+    for cyc_idx, col in zip(dqdv_cycles, colors_dqdv):
         cyc = profile.select_cycle(cyc_idx)
         t = cyc.time_s
         chg = cyc.current_a < 0
         dchg = cyc.current_a > 0
-        label = f"Cycle {cyc_idx}"
+        i_ma = rows[cyc_idx - 1]["i_dchg_ma"]
+        in_varied = cyc_idx in varied_cycs
+        lbl = f"C{cyc_idx} ({i_ma:.2f} mA)" if in_varied else f"Cyc {cyc_idx}"
+        lw = 1.4 if in_varied else 0.9
+        alpha = 1.0 if in_varied else 0.7
+
         if chg.sum() > 5:
             win = max(3, min(7, (chg.sum() // 2) | 1))
-            q_chg = half_cycle_q_ah(cyc.current_a, t, chg)  # 0-리셋, Ah
+            q_chg = half_cycle_q_ah(cyc.current_a, t, chg)
             v_c, dq_c = dqdv(cyc.voltage_v[chg], q_chg, window=win)
-            axes[0].plot(v_c, dq_c * 1000, color=col, label=label, linewidth=1.2)
+            axes[0].plot(v_c, dq_c * 1000, color=col, label=lbl,
+                         linewidth=lw, alpha=alpha)
         if dchg.sum() > 5:
             win = max(3, min(7, (dchg.sum() // 2) | 1))
-            q_dchg = half_cycle_q_ah(cyc.current_a, t, dchg)  # 0-리셋, Ah
+            q_dchg = half_cycle_q_ah(cyc.current_a, t, dchg)
             v_d, dq_d = dqdv(cyc.voltage_v[dchg], q_dchg, window=win)
-            # 방전 dQ/dV: 전압 오름차순 정렬 기준 음수 → 관습적 양수 피크로 반전
-            axes[1].plot(v_d, -dq_d * 1000, color=col, label=label, linewidth=1.2)
+            axes[1].plot(v_d, -dq_d * 1000, color=col, label=lbl,
+                         linewidth=lw, alpha=alpha)
 
-    for ax, title in zip(axes, ["Charge dQ/dV", "Discharge dQ/dV (negated to positive)"]):
+    for ax, title in zip(axes, ["Charge dQ/dV", "Discharge dQ/dV"]):
         ax.set_xlabel("Voltage (V)")
         ax.set_ylabel("dQ/dV (mAh/V)")
         ax.set_title(title)
         ax.axhline(0, color="k", linewidth=0.5, linestyle="--", alpha=0.4)
-        ax.legend(fontsize=8)
+        ax.legend(fontsize=7, ncol=2)
         ax.grid(True, alpha=0.3)
-    fig.suptitle("dQ/dV — Representative Cycles", fontsize=13)
+    fig.suptitle("dQ/dV — C-rate Variation (bold) + Repeated Cycles (sampled)", fontsize=12)
+    plt.tight_layout()
     fig2 = savefig("fig_02_dqdv_representative.png")
     log.info("fig_02 저장")
 
     # 통계 테이블 (마크다운)
-    tbl = "| Cycle | N pts | Q (mAh) | V min (V) | V max (V) | Duration (h) |\n"
-    tbl += "|------:|------:|--------:|----------:|----------:|-------------:|\n"
+    tbl = "| Cycle | I dchg (mA) | N pts | Q (mAh) | V min (V) | V max (V) | Duration (h) |\n"
+    tbl += "|------:|------------:|------:|--------:|----------:|----------:|-------------:|\n"
     for _, r in stats_df.iterrows():
-        tbl += (f"| {int(r.cycle)} | {int(r.n_pts)} | {r.q_mah:.3f} |"
+        tbl += (f"| {int(r.cycle)} | {r.i_dchg_ma:.2f} | {int(r.n_pts)} | {r.q_mah:.3f} |"
                 f" {r.v_min:.3f} | {r.v_max:.3f} | {r.duration_h:.2f} |\n")
 
-    # 요약 행
     s = stats_df
-    summary = (f"\n**요약**: 총 {n_cyc}사이클, "
+    varied_str = ", ".join(str(c) for c in varied_cycs)
+    summary = (f"\n**요약**: 총 {n_cyc}사이클 — "
+               f"C-rate 변동 사이클: [{varied_str}] / "
+               f"반복 사이클(@ {dom_i:.2f} mA): {len(repeated_cycs)}개\n"
                f"Q 범위 {s.q_mah.min():.2f}–{s.q_mah.max():.2f} mAh "
                f"(평균 {s.q_mah.mean():.2f} mAh), "
                f"전압 범위 {s.v_min.min():.3f}–{s.v_max.max():.3f} V\n")
@@ -193,9 +287,11 @@ def section_input_data(profile) -> str:
     return f"""
 ## § 2. 입력 데이터 개요
 
-{md_img("전 사이클 Q-V 곡선 (색=사이클 번호)", fig1)}
+> **표시 방식**: C-rate 변동 사이클(cyc {varied_cycs})은 전부 표시, 동일 C-rate 반복 사이클은 적절한 간격으로 샘플링.
 
-{md_img("대표 사이클 dQ/dV", fig2)}
+{md_img("Q-V 오버레이 (색 레이블=C-rate 변동 사이클, colorbar=반복 사이클)", fig1)}
+
+{md_img("dQ/dV (굵은 선=C-rate 변동, 얇은 선=반복 사이클 샘플)", fig2)}
 
 ### 사이클별 통계
 
