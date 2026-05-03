@@ -1,0 +1,14 @@
+{
+  "R3m low-voltage Gaussian full-range": {
+    "voltage_min_v": 2.563277137910516,
+    "voltage_max_v": 4.586722862089477,
+    "phase_peak_v": 3.1807378675986877,
+    "max_abs_voltage_step_v": 0.010352520058817483
+  },
+  "C2m high-voltage Gaussian full-range": {
+    "voltage_min_v": 2.5716325654926204,
+    "voltage_max_v": 4.578367434507371,
+    "phase_peak_v": 3.820718893089345,
+    "max_abs_voltage_step_v": 0.01171951822751005
+  }
+}

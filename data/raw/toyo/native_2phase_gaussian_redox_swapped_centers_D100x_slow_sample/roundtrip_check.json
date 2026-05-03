@@ -1,0 +1,14 @@
+{
+  "parsed_points": 219019,
+  "cycles": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "segments": 16,
+  "voltage_min_v": 2.50001,
+  "voltage_max_v": 4.64999,
+  "pybamm_current_min_a_after_parse": -0.005,
+  "pybamm_current_max_a_after_parse": 0.005
+}

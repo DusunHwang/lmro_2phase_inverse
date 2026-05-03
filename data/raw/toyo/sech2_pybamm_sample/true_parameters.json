@@ -1,0 +1,74 @@
+{
+  "truth": {
+    "frac_R3m": 0.62,
+    "log10_D_R3m": -14.338187314462738,
+    "log10_R_R3m": -6.823908740944319,
+    "log10_D_C2m": -16.0,
+    "log10_R_C2m": -6.0,
+    "log10_contact_resistance": -3.0,
+    "capacity_scale": 1.0,
+    "c_s_0_fraction": 0.99,
+    "nominal_capacity_ah": 0.005,
+    "frac_C2m": 0.38
+  },
+  "effective": {
+    "D_eff_m2_s": 2.8838000000000044e-15,
+    "R_eff_m": 4.7299999999999996e-07
+  },
+  "ocp_definition": {
+    "form": "U(x)=b0+b1*x+sum(A_i*tanh((x-c_i)/w_i)); dU/dx=b1+sum((A_i/w_i)*sech^2((x-c_i)/w_i))",
+    "R3m": {
+      "b0": 6.02854254093401,
+      "b1": -4.145383964967912,
+      "amps": [
+        0.4030234410385469,
+        0.24949070159529096,
+        -0.134341147012849,
+        0.15353273944325596
+      ],
+      "centers": [
+        0.18,
+        0.38,
+        0.64,
+        0.82
+      ],
+      "widths": [
+        0.04,
+        0.055,
+        0.075,
+        0.06
+      ],
+      "voltage_lower": 2.5,
+      "voltage_upper": 4.65
+    },
+    "C2m": {
+      "b0": 4.339682407058195,
+      "b1": -2.7635893099786073,
+      "amps": [
+        0.5565561804818029,
+        -0.15353273944325596,
+        0.23029910916488394,
+        0.11514955458244197
+      ],
+      "centers": [
+        0.22,
+        0.48,
+        0.7,
+        0.88
+      ],
+      "widths": [
+        0.055,
+        0.085,
+        0.07,
+        0.065
+      ],
+      "voltage_lower": 2.5,
+      "voltage_upper": 4.65
+    }
+  },
+  "literature_notes": [
+    "Argonne summary for Li1.2Mn0.54Ni0.13Co0.13O2 CP-FD reports 100-300 nm particles and DLi=4.59e-11 cm2/s.",
+    "Energy Storage Materials 2022 reports micron-sized Li-rich layered oxides with diffusion on the order of 1e-12 cm2/s and nanosized grains around 1e-14 cm2/s.",
+    "Phase-specific R3m/C2m values here are effective surrogate targets for inverse-model testing, not direct measured crystallographic phase constants."
+  ]
+}

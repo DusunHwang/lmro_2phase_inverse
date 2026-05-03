@@ -1,0 +1,16 @@
+{
+  "parsed_points": 17264,
+  "cycles": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "segments": 20,
+  "voltage_min_v": 2.50001,
+  "voltage_max_v": 4.64999,
+  "pybamm_current_min_a_after_parse": -0.01,
+  "pybamm_current_max_a_after_parse": 0.01,
+  "recovery_interpretation": "Round-trip parse succeeded. With the current FallbackA model, the generated data directly identifies effective OCP, D_eff, and R_eff. Individual phase D/R values are only recoverable if the inverse model keeps the same phase-fraction/OCP prior; otherwise D_eff and R_eff are the identifiable quantities."
+}

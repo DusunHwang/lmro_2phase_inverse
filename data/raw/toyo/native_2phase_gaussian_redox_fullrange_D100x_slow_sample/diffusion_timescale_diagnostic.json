@@ -1,0 +1,20 @@
+{
+  "R_m": 1.5e-07,
+  "D_R3m_m2_s": 4.59e-17,
+  "D_C2m_m2_s": 1e-18,
+  "D_ratio_R3m_over_C2m": 45.9,
+  "tau_R3m_R2_over_D_s": 490.19607843137254,
+  "tau_C2m_R2_over_D_s": 22499.999999999996,
+  "diagnostic_1C_fullrange": {
+    "primary": {
+      "max_abs_surface_minus_avg_mol_m3": 693.415211622978,
+      "max_radial_span_mol_m3": 1650.2844652693311,
+      "max_radial_span_fraction_of_cmax": 0.034742830847775394
+    },
+    "secondary": {
+      "max_abs_surface_minus_avg_mol_m3": 25158.420256506317,
+      "max_radial_span_mol_m3": 40627.630244222855,
+      "max_radial_span_fraction_of_cmax": 0.8553185314573233
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "R3m high/narrow": {
+    "phase_fraction": 0.3333333333,
+    "q_span_fraction": 0.32666666663399996,
+    "dqdv_peak_v": 3.699743943623091,
+    "dqdv_peak_fraction_per_v": 1.2231308721443803,
+    "voltage_min_v": 2.563277137910516,
+    "voltage_max_v": 4.586722862089477
+  },
+  "C2m low/broad/2x": {
+    "phase_fraction": 0.6666666667000001,
+    "q_span_fraction": 0.6533333333660001,
+    "dqdv_peak_v": 3.1988007032988963,
+    "dqdv_peak_fraction_per_v": 1.2906494158332746,
+    "voltage_min_v": 2.626695574977239,
+    "voltage_max_v": 4.515707408025857
+  }
+}

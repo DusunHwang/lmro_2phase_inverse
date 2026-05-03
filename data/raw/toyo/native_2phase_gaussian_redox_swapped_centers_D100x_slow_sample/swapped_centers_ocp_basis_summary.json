@@ -1,0 +1,12 @@
+{
+  "R3m Gaussian center 3.7 V": {
+    "phase_peak_v": 3.700635629794776,
+    "voltage_min_v": 2.563277137910516,
+    "voltage_max_v": 4.586722862089477
+  },
+  "C2m Gaussian center 3.2 V": {
+    "phase_peak_v": 3.2002244529075528,
+    "voltage_min_v": 2.5716325654926084,
+    "voltage_max_v": 4.578367434507371
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "0.1C": {
+    "CC-Chg": {
+      "available": true,
+      "wrong_sign_fraction": 4.271739594754304e-05
+    },
+    "CC-Dchg": {
+      "available": true,
+      "wrong_sign_fraction": 0.0
+    }
+  },
+  "0.33C": {
+    "CC-Chg": {
+      "available": true,
+      "wrong_sign_fraction": 7.901390644753477e-05
+    },
+    "CC-Dchg": {
+      "available": true,
+      "wrong_sign_fraction": 0.0
+    }
+  },
+  "0.5C": {
+    "CC-Chg": {
+      "available": true,
+      "wrong_sign_fraction": 0.00011971746677840296
+    },
+    "CC-Dchg": {
+      "available": true,
+      "wrong_sign_fraction": 0.00047996160307175426
+    }
+  },
+  "1C": {
+    "CC-Chg": {
+      "available": true,
+      "wrong_sign_fraction": 0.0
+    },
+    "CC-Dchg": {
+      "available": true,
+      "wrong_sign_fraction": 0.0
+    }
+  }
+}

@@ -1,0 +1,138 @@
+{
+  "0.1C": {
+    "CC-Chg": {
+      "available": true,
+      "points": 68497,
+      "dqdv_method": "Q(V) interpolation followed by finite difference",
+      "grid_v": 0.01,
+      "voltage_min_v": 2.626557,
+      "voltage_max_v": 4.64999,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.2965569999999857,
+        "dqdv_ah_per_v": 0.0076130444444444285
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.796556999999975,
+        "dqdv_ah_per_v": 0.011363024999998167
+      }
+    },
+    "CC-Dchg": {
+      "available": true,
+      "points": 67491,
+      "dqdv_method": "Q(V) interpolation followed by finite difference",
+      "grid_v": 0.01,
+      "voltage_min_v": 2.50001,
+      "voltage_max_v": 4.515535,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.1000099999999873,
+        "dqdv_ah_per_v": -0.007611294444443972
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.6100099999999764,
+        "dqdv_ah_per_v": -0.01130324999999971
+      }
+    }
+  },
+  "0.33C": {
+    "CC-Chg": {
+      "available": true,
+      "points": 20175,
+      "dqdv_method": "Q(V) interpolation followed by finite difference",
+      "grid_v": 0.01,
+      "voltage_min_v": 2.626563,
+      "voltage_max_v": 4.64999,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.3465629999999846,
+        "dqdv_ah_per_v": 0.005248953022268921
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.846562999999974,
+        "dqdv_ah_per_v": 0.01267429444444457
+      }
+    },
+    "CC-Dchg": {
+      "available": true,
+      "points": 18244,
+      "dqdv_method": "Q(V) interpolation followed by finite difference",
+      "grid_v": 0.01,
+      "voltage_min_v": 2.50001,
+      "voltage_max_v": 4.398269,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.020009999999989,
+        "dqdv_ah_per_v": -0.005830322115384645
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.540009999999978,
+        "dqdv_ah_per_v": -0.011294019761904306
+      }
+    }
+  },
+  "0.5C": {
+    "CC-Chg": {
+      "available": true,
+      "points": 13033,
+      "dqdv_method": "Q(V) interpolation followed by finite difference",
+      "grid_v": 0.01,
+      "voltage_min_v": 2.626567,
+      "voltage_max_v": 4.64999,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.3465669999999847,
+        "dqdv_ah_per_v": 0.003461573076922537
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.8665669999999737,
+        "dqdv_ah_per_v": 0.013303307692307559
+      }
+    },
+    "CC-Dchg": {
+      "available": true,
+      "points": 11142,
+      "dqdv_method": "Q(V) interpolation followed by finite difference",
+      "grid_v": 0.01,
+      "voltage_min_v": 2.50001,
+      "voltage_max_v": 4.330672,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 2.9900099999999896,
+        "dqdv_ah_per_v": -0.004753587273232079
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.5200099999999783,
+        "dqdv_ah_per_v": -0.011102722328628682
+      }
+    }
+  },
+  "1C": {
+    "CC-Chg": {
+      "available": true,
+      "points": 6103,
+      "dqdv_method": "Q(V) interpolation followed by finite difference",
+      "grid_v": 0.01,
+      "voltage_min_v": 2.626579,
+      "voltage_max_v": 4.64999,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.3465789999999846,
+        "dqdv_ah_per_v": 0.0018307278700253442
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.9065789999999727,
+        "dqdv_ah_per_v": 0.013712587137255414
+      }
+    },
+    "CC-Dchg": {
+      "available": true,
+      "points": 4726,
+      "dqdv_method": "Q(V) interpolation followed by finite difference",
+      "grid_v": 0.01,
+      "voltage_min_v": 2.50001,
+      "voltage_max_v": 4.15513,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 2.9500099999999905,
+        "dqdv_ah_per_v": -0.0030669472015214805
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.490009999999979,
+        "dqdv_ah_per_v": -0.01063120695752049
+      }
+    }
+  }
+}

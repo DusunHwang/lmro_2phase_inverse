@@ -58,8 +58,8 @@ def test_parse_synthetic_ascii():
 
         assert len(profile) == 4
         assert profile.current_a is not None
-        # mA → A 변환 확인
-        assert abs(profile.current_a[0] - 0.25e-3) < 1e-6
+        # mA → A 변환 및 TOYO→PyBaMM 부호 변환 확인
+        assert abs(profile.current_a[0] + 0.25e-3) < 1e-6
         # Rest 구간 전류 0 확인
         assert abs(profile.current_a[2]) < 1e-4
         # cycle 감지

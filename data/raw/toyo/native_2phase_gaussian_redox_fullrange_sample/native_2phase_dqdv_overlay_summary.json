@@ -1,0 +1,122 @@
+{
+  "0.1C": {
+    "CC-Chg": {
+      "available": true,
+      "points": 69510,
+      "voltage_min_v": 2.626557,
+      "voltage_max_v": 4.64999,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.221661,
+        "dqdv_ah_per_v": 0.01749999999950127
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.91308,
+        "dqdv_ah_per_v": 0.008750000000236357
+      }
+    },
+    "CC-Dchg": {
+      "available": true,
+      "points": 69892,
+      "voltage_min_v": 2.50001,
+      "voltage_max_v": 4.55245,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.0919875,
+        "dqdv_ah_per_v": -0.014000000000533601
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.72401,
+        "dqdv_ah_per_v": -0.008750000000236357
+      }
+    }
+  },
+  "0.33C": {
+    "CC-Chg": {
+      "available": true,
+      "points": 20857,
+      "voltage_min_v": 2.626563,
+      "voltage_max_v": 4.64999,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.348606,
+        "dqdv_ah_per_v": 0.011500000000198452
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.9714885,
+        "dqdv_ah_per_v": 0.007931034482877266
+      }
+    },
+    "CC-Dchg": {
+      "available": true,
+      "points": 20765,
+      "voltage_min_v": 2.50001,
+      "voltage_max_v": 4.489338,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.0386569999999997,
+        "dqdv_ah_per_v": -0.011500000000198452
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.6699085,
+        "dqdv_ah_per_v": -0.00793103448286979
+      }
+    }
+  },
+  "0.5C": {
+    "CC-Chg": {
+      "available": true,
+      "points": 13716,
+      "voltage_min_v": 2.626567,
+      "voltage_max_v": 4.64999,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.349999,
+        "dqdv_ah_per_v": 0.011566666666767146
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.9674104999999997,
+        "dqdv_ah_per_v": 0.008069767441814401
+      }
+    },
+    "CC-Dchg": {
+      "available": true,
+      "points": 13604,
+      "voltage_min_v": 2.50001,
+      "voltage_max_v": 4.465949,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.005674,
+        "dqdv_ah_per_v": -0.011600000000104893
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.6321415,
+        "dqdv_ah_per_v": -0.008069767441902785
+      }
+    }
+  },
+  "1C": {
+    "CC-Chg": {
+      "available": true,
+      "points": 6813,
+      "voltage_min_v": 2.626579,
+      "voltage_max_v": 4.64999,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 3.3492889999999997,
+        "dqdv_ah_per_v": 0.00965277777779779
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.4501745,
+        "dqdv_ah_per_v": 0.008797468354439685
+      }
+    },
+    "CC-Dchg": {
+      "available": true,
+      "points": 6712,
+      "voltage_min_v": 2.50001,
+      "voltage_max_v": 4.424229,
+      "r3m_window_2p5_3p35": {
+        "voltage_v": 2.9627485,
+        "dqdv_ah_per_v": -0.01139344262302062
+      },
+      "c2m_window_3p45_4p15": {
+        "voltage_v": 3.6106265,
+        "dqdv_ah_per_v": -0.007808988764046792
+      }
+    }
+  }
+}

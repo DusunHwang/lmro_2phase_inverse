@@ -1,0 +1,222 @@
+[
+  {
+    "cycle": 1,
+    "c_rate": 0.1,
+    "step": 1,
+    "mode": "CC-Chg",
+    "points": 5104,
+    "duration_s": 25514.474,
+    "voltage_start_v": 2.597222,
+    "voltage_end_v": 4.64999,
+    "current_ma_mean": 0.5
+  },
+  {
+    "cycle": 1,
+    "c_rate": 0.1,
+    "step": 2,
+    "mode": "Rest",
+    "points": 121,
+    "duration_s": 600.0,
+    "voltage_start_v": 4.553556,
+    "voltage_end_v": 4.553292,
+    "current_ma_mean": 0.0
+  },
+  {
+    "cycle": 1,
+    "c_rate": 0.1,
+    "step": 3,
+    "mode": "CC-Dchg",
+    "points": 4902,
+    "duration_s": 24500.8,
+    "voltage_start_v": 4.456858,
+    "voltage_end_v": 2.50001,
+    "current_ma_mean": -0.5
+  },
+  {
+    "cycle": 1,
+    "c_rate": 0.1,
+    "step": 4,
+    "mode": "Rest",
+    "points": 121,
+    "duration_s": 600.0,
+    "voltage_start_v": 2.596746,
+    "voltage_end_v": 2.59723,
+    "current_ma_mean": 0.0
+  },
+  {
+    "cycle": 2,
+    "c_rate": 0.33,
+    "step": 1,
+    "mode": "CC-Chg",
+    "points": 1486,
+    "duration_s": 7423.8009999999995,
+    "voltage_start_v": 2.659789,
+    "voltage_end_v": 4.64999,
+    "current_ma_mean": 1.6499999999999997
+  },
+  {
+    "cycle": 2,
+    "c_rate": 0.33,
+    "step": 2,
+    "mode": "Rest",
+    "points": 121,
+    "duration_s": 600.0,
+    "voltage_start_v": 4.49282,
+    "voltage_end_v": 4.491716,
+    "current_ma_mean": 0.0
+  },
+  {
+    "cycle": 2,
+    "c_rate": 0.33,
+    "step": 3,
+    "mode": "CC-Dchg",
+    "points": 1384,
+    "duration_s": 6911.263000000006,
+    "voltage_start_v": 4.334546,
+    "voltage_end_v": 2.50001,
+    "current_ma_mean": -1.6499999999999997
+  },
+  {
+    "cycle": 2,
+    "c_rate": 0.33,
+    "step": 4,
+    "mode": "Rest",
+    "points": 121,
+    "duration_s": 600.0,
+    "voltage_start_v": 2.657898,
+    "voltage_end_v": 2.659422,
+    "current_ma_mean": 0.0
+  },
+  {
+    "cycle": 3,
+    "c_rate": 0.5,
+    "step": 1,
+    "mode": "CC-Chg",
+    "points": 968,
+    "duration_s": 4830.4939999999915,
+    "voltage_start_v": 2.682792,
+    "voltage_end_v": 4.64999,
+    "current_ma_mean": 2.5
+  },
+  {
+    "cycle": 3,
+    "c_rate": 0.5,
+    "step": 2,
+    "mode": "Rest",
+    "points": 121,
+    "duration_s": 600.0,
+    "voltage_start_v": 4.471169,
+    "voltage_end_v": 4.469545,
+    "current_ma_mean": 0.0
+  },
+  {
+    "cycle": 3,
+    "c_rate": 0.5,
+    "step": 3,
+    "mode": "CC-Dchg",
+    "points": 890,
+    "duration_s": 4440.964000000007,
+    "voltage_start_v": 4.290725,
+    "voltage_end_v": 2.50001,
+    "current_ma_mean": -2.5
+  },
+  {
+    "cycle": 3,
+    "c_rate": 0.5,
+    "step": 4,
+    "mode": "Rest",
+    "points": 121,
+    "duration_s": 600.0,
+    "voltage_start_v": 2.679813,
+    "voltage_end_v": 2.682068,
+    "current_ma_mean": 0.0
+  },
+  {
+    "cycle": 4,
+    "c_rate": 1.0,
+    "step": 1,
+    "mode": "CC-Chg",
+    "points": 472,
+    "duration_s": 2350.2869999999966,
+    "voltage_start_v": 2.723385,
+    "voltage_end_v": 4.64999,
+    "current_ma_mean": 5.0
+  },
+  {
+    "cycle": 4,
+    "c_rate": 1.0,
+    "step": 2,
+    "mode": "Rest",
+    "points": 121,
+    "duration_s": 600.0,
+    "voltage_start_v": 4.43453,
+    "voltage_end_v": 4.431815,
+    "current_ma_mean": 0.0
+  },
+  {
+    "cycle": 4,
+    "c_rate": 1.0,
+    "step": 3,
+    "mode": "CC-Dchg",
+    "points": 423,
+    "duration_s": 2109.2400000000052,
+    "voltage_start_v": 4.216357,
+    "voltage_end_v": 2.50001,
+    "current_ma_mean": -5.0
+  },
+  {
+    "cycle": 4,
+    "c_rate": 1.0,
+    "step": 4,
+    "mode": "Rest",
+    "points": 121,
+    "duration_s": 600.0,
+    "voltage_start_v": 2.717141,
+    "voltage_end_v": 2.721421,
+    "current_ma_mean": 0.0
+  },
+  {
+    "cycle": 5,
+    "c_rate": 2.0,
+    "step": 1,
+    "mode": "CC-Chg",
+    "points": 227,
+    "duration_s": 1128.851999999999,
+    "voltage_start_v": 2.768708,
+    "voltage_end_v": 4.64999,
+    "current_ma_mean": 10.0
+  },
+  {
+    "cycle": 5,
+    "c_rate": 2.0,
+    "step": 2,
+    "mode": "Rest",
+    "points": 121,
+    "duration_s": 600.0,
+    "voltage_start_v": 4.396844,
+    "voltage_end_v": 4.393499,
+    "current_ma_mean": 0.0
+  },
+  {
+    "cycle": 5,
+    "c_rate": 2.0,
+    "step": 3,
+    "mode": "CC-Dchg",
+    "points": 198,
+    "duration_s": 981.599000000002,
+    "voltage_start_v": 4.14036,
+    "voltage_end_v": 2.50001,
+    "current_ma_mean": -10.0
+  },
+  {
+    "cycle": 5,
+    "c_rate": 2.0,
+    "step": 4,
+    "mode": "Rest",
+    "points": 121,
+    "duration_s": 600.0,
+    "voltage_start_v": 2.75601,
+    "voltage_end_v": 2.763954,
+    "current_ma_mean": 0.0
+  }
+]

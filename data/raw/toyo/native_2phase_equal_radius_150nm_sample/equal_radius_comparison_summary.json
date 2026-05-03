@@ -1,0 +1,80 @@
+{
+  "base_R3m150_C2m1000": {
+    "0.1C": {
+      "R3m_feature_voltage_v": 3.3499350000000003,
+      "R3m_dqdv_ah_per_v": -0.001166666666667958,
+      "C2m_peak_voltage_v": 3.8591915,
+      "C2m_dqdv_ah_per_v": -0.014000000000533601
+    },
+    "0.33C": {
+      "R3m_feature_voltage_v": 3.347833,
+      "R3m_dqdv_ah_per_v": -0.0011734693877555916,
+      "C2m_peak_voltage_v": 3.795632,
+      "C2m_dqdv_ah_per_v": -0.009583333333414226
+    },
+    "0.5C": {
+      "R3m_feature_voltage_v": 3.322793,
+      "R3m_dqdv_ah_per_v": -0.001032738095238554,
+      "C2m_peak_voltage_v": 3.772814,
+      "C2m_dqdv_ah_per_v": -0.005999999999988328
+    },
+    "1C": {
+      "R3m_feature_voltage_v": 3.2008525,
+      "R3m_dqdv_ah_per_v": -0.0005884843353091152,
+      "C2m_peak_voltage_v": 3.7313545,
+      "C2m_dqdv_ah_per_v": -0.0013039399624768058
+    }
+  },
+  "equalR_1000nm": {
+    "0.1C": {
+      "R3m_feature_voltage_v": 3.3488565,
+      "R3m_dqdv_ah_per_v": -0.0011864406779702429,
+      "C2m_peak_voltage_v": 3.8590605,
+      "C2m_dqdv_ah_per_v": -0.014000000000533601
+    },
+    "0.33C": {
+      "R3m_feature_voltage_v": 3.345685,
+      "R3m_dqdv_ah_per_v": -0.0011734693877561448,
+      "C2m_peak_voltage_v": 3.795731,
+      "C2m_dqdv_ah_per_v": -0.00954166666674656
+    },
+    "0.5C": {
+      "R3m_feature_voltage_v": 3.30943,
+      "R3m_dqdv_ah_per_v": -0.0010357142857147924,
+      "C2m_peak_voltage_v": 3.7725910000000002,
+      "C2m_dqdv_ah_per_v": -0.006000000000034268
+    },
+    "1C": {
+      "R3m_feature_voltage_v": 3.2056485,
+      "R3m_dqdv_ah_per_v": -0.0005884843353091152,
+      "C2m_peak_voltage_v": 3.730835,
+      "C2m_dqdv_ah_per_v": -0.0013143939393937313
+    }
+  },
+  "equalR_150nm": {
+    "0.1C": {
+      "R3m_feature_voltage_v": 3.2029094999999996,
+      "R3m_dqdv_ah_per_v": -0.0012727272727243997,
+      "C2m_peak_voltage_v": 3.8599465,
+      "C2m_dqdv_ah_per_v": -0.014000000000533601
+    },
+    "0.33C": {
+      "R3m_feature_voltage_v": 3.347968,
+      "R3m_dqdv_ah_per_v": -0.0011979166666701603,
+      "C2m_peak_voltage_v": 3.799262,
+      "C2m_dqdv_ah_per_v": -0.012722222222328747
+    },
+    "0.5C": {
+      "R3m_feature_voltage_v": 3.1742375000000003,
+      "R3m_dqdv_ah_per_v": -0.0012804428044279766,
+      "C2m_peak_voltage_v": 3.7768420000000003,
+      "C2m_dqdv_ah_per_v": -0.01239285714289541
+    },
+    "1C": {
+      "R3m_feature_voltage_v": 3.3478909999999997,
+      "R3m_dqdv_ah_per_v": -0.0011982758620697337,
+      "C2m_peak_voltage_v": 3.741414,
+      "C2m_dqdv_ah_per_v": -0.011982758620757821
+    }
+  }
+}

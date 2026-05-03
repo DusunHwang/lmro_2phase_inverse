@@ -1,5 +1,685 @@
 # lmro-2phase-inverse
 
+---
+
+<!-- ============================================================ -->
+<!-- 업데이트: 2026-05-03  — 현재 상태 전체 재정리                -->
+<!-- ============================================================ -->
+
+## 📋 2026-05-03 업데이트 — 현재 상태 전체 정리
+
+> 이 섹션은 2026-05-03 기준 실제 폴더 구조·실행 파일·입출력을 기술합니다.
+> 초기 작성 README는 아래 [─── 초기 README (작성 당시) ───](#초기-readme-작성-당시) 에 보존됩니다.
+
+---
+
+### 목차 (2026-05-03)
+
+1. [프로젝트 개요](#1-프로젝트-개요)
+2. [전체 폴더 구조](#2-전체-폴더-구조)
+3. [환경 설치](#3-환경-설치)
+4. [파이프라인 스크립트 — 입출력 상세](#4-파이프라인-스크립트--입출력-상세)
+5. [보조 스크립트 — 입출력 상세](#5-보조-스크립트--입출력-상세)
+6. [설정 파일 레퍼런스](#6-설정-파일-레퍼런스)
+7. [생성된 가상 데이터 샘플 목록](#7-생성된-가상-데이터-샘플-목록)
+8. [데이터 흐름 요약](#8-데이터-흐름-요약)
+9. [테스트 실행](#9-테스트-실행)
+
+---
+
+### 1. 프로젝트 개요
+
+LMR(Li-rich Mn-rich) 양극 / Li metal 음극 half-cell에서 측정한 충방전 데이터로부터
+**2-phase(R3m + C2m) 별 확산계수(D), 입자 반경(R), 상 분율(frac), OCP 형상**을 역추정하는 파이프라인.
+
+```
+TOYO 실측 CSV / 가상 시뮬레이션 CSV
+  ↓ [Stage 1] PyBaMM native 2-phase 시뮬레이션 + tanh OCP fitting
+  ↓ [Stage 2] 파라미터 샘플링 → synthetic dataset 대량 생성
+  ↓ [Stage 3] DL inverse model (1D CNN + Transformer) 학습
+  ↓ [Stage 4] 실측 프로파일 → 상별 D, R, frac, OCP 추정
+```
+
+**2가지 충방전 곡선 생성 경로:**
+
+| 경로 | 스크립트 | 모델 | OCP 표현 |
+|------|---------|------|---------|
+| **Effective (FallbackA)** | `generate_toyo_sech2_pybamm_sample.py` | SPMe single-phase half-cell | tanh/sech² basis |
+| **Native 2-phase** | `generate_toyo_native_2phase_sample.py` | SPM `particle_phases=("1","2")` | `_plateau_ocp()` 또는 `_gaussian_redox_ocp()` |
+
+---
+
+### 2. 전체 폴더 구조
+
+```
+lmro_2phase_inverse/
+│
+├── setup_env.sh                        # 환경 설치 스크립트 (aarch64 자동 패치 포함)
+├── pyproject.toml                      # 패키지 메타데이터 & 콘솔 엔트리포인트 정의
+│
+├── configs/                            # ← 이식 시 이 폴더만 수정
+│   ├── env.yaml                        #   시스템별 설정 (CUDA URL, 경로, 병렬화)
+│   ├── toyo_ascii.yaml                 #   데이터 파일 형식 적응 (인코딩·컬럼·단위·부호)
+│   ├── halfcell_lmr_base.yaml          #   LMR 전극 물리 파라미터 기반값
+│   ├── stage0_smoke.yaml               #   Stage 0 옵션
+│   ├── stage1_fit_tanh.yaml            #   Stage 1 Optuna/scipy 설정 + loss weights
+│   ├── stage1_fit_tanh_quicktest.yaml  #   Stage 1 빠른 검증용 (trials 수 축소)
+│   ├── stage2_generate_synthetic.yaml  #   Stage 2 샘플 수·범위·병렬화
+│   ├── stage3_train_inverse.yaml       #   Stage 3 모델 아키텍처·학습 하이퍼파라미터
+│   └── stage4_infer_validate.yaml      #   Stage 4 추론·forward validation 설정
+│
+├── scripts/                            # 실행 스크립트 전체
+│   │
+│   │   ── 메인 파이프라인 (번호 순서대로 실행) ──
+│   ├── 00_smoke_test_pybamm_halfcell.py
+│   ├── 01_parse_toyo_ascii.py
+│   ├── 02_fit_tanh_ocp.py
+│   ├── 03_generate_synthetic_dataset.py
+│   ├── 04_train_inverse_model.py
+│   ├── 05_infer_lmr_profile.py
+│   ├── 06_forward_validate.py
+│   ├── 07_generate_report.py
+│   │
+│   │   ── 보조 스크립트 (가상 데이터 생성·분석) ──
+│   ├── generate_toyo_sech2_pybamm_sample.py    # Effective SPMe + tanh OCP 가상 데이터
+│   ├── generate_toyo_native_2phase_sample.py   # Native 2-phase SPM 가상 데이터
+│   ├── analyze_native_2phase_sample.py         # dQ/dV 분석·플롯 (위 스크립트 후처리)
+│   │
+│   └── patches/                                # 플랫폼별 패치 파일
+│       ├── idaklu_stub.py                      #   Python/casadi idaklu stub
+│       └── pybammsolvers_init.py               #   try/except __init__ 패치
+│
+├── src/lmro2phase/                     # 패키지 소스
+│   ├── cli/commands.py                 #   lmro-* 콘솔 엔트리포인트
+│   │
+│   ├── io/
+│   │   ├── toyo_ascii.py               #   TOYO CSV 파서 (자동 인코딩·구분자·헤더)
+│   │   ├── profile_schema.py           #   BatteryProfile / ProfileSegment 구조
+│   │   ├── profile_cleaning.py         #   전처리 (이상값·단위·부호)
+│   │   └── dataset_store.py            #   parquet/zarr I/O
+│   │
+│   ├── physics/
+│   │   ├── simulator.py                #   run_current_drive() / run_experiment() 공통 인터페이스
+│   │   ├── halfcell_model_factory.py   #   SPM/SPMe/DFN half-cell 빌더 + 2-phase 지원 판별
+│   │   ├── positive_2phase_factory.py  #   FallbackA: U_eff / D_eff / R_eff 가중 혼합
+│   │   ├── lmr_parameter_set.py        #   build_pybamm_halfcell_params() — Chen2020 기반
+│   │   ├── ocp_tanh.py                 #   tanh basis OCP (TanhOCPParams, numpy/pybamm)
+│   │   ├── ocp_grid.py                 #   256점 자유형 OCPGrid
+│   │   ├── ocp_perturbation.py         #   GP/spline/plateau/shoulder 등 6모드 변동 생성
+│   │   ├── protocol_builder.py         #   측정 전류 interpolant + pybamm.Experiment
+│   │   └── pybamm_env.py               #   환경 확인 유틸
+│   │
+│   ├── fitting/
+│   │   ├── stage1_objective.py         #   compute_loss() — V(Q)/V(t)/dVdQ/dQdV/rest
+│   │   └── stage1_optimizer.py         #   run_optuna_search() + run_scipy_refinement()
+│   │
+│   ├── generation/
+│   │   ├── sampler.py                  #   SampleRecord 파라미터 샘플러 (local/broad/edge)
+│   │   ├── batch_simulate.py           #   ProcessPoolExecutor 병렬 배치 시뮬레이션
+│   │   └── quality_filter.py           #   비물리적 결과 필터 (전압 범위 등)
+│   │
+│   ├── features/
+│   │   ├── capacity_axis.py            #   정규화 용량 격자 보간 (512점)
+│   │   ├── differential_features.py    #   dV/dQ, dQ/dV → [10, 512] feature tensor
+│   │   └── normalization.py            #   feature 정규화 통계
+│   │
+│   ├── learning/
+│   │   ├── model_inverse.py            #   InverseModel: 1D CNN ResBlock + Transformer
+│   │   ├── dataset.py                  #   SyntheticDataset (zarr + parquet)
+│   │   ├── losses.py                   #   permutation-invariant OCP loss + smoothness
+│   │   ├── train.py                    #   학습 루프 (AdamW, CosineAnnealingLR)
+│   │   └── infer.py                    #   추론 + 결과 저장
+│   │
+│   └── validation/
+│       ├── forward_validate.py         #   예측 파라미터 → PyBaMM → 잔차 계산
+│       └── plots.py                    #   V-t / Q-V / dQ-dV 비교 플롯
+│
+├── tests/
+│   ├── test_toyo_parser.py
+│   ├── test_ocp_tanh.py
+│   ├── test_ocp_grid.py
+│   ├── test_profile_resampling.py
+│   ├── test_stage1_objective.py
+│   └── test_inverse_model_overfit.py
+│
+└── data/
+    ├── raw/toyo/                                   # 원본 및 가상 데이터
+    │   ├── Toyo_LMR_HalfCell_Sample_50cycles.csv   #   실측 TOYO 데이터 (50사이클)
+    │   ├── sech2_pybamm_sample/                    #   가상: Effective SPMe + tanh OCP
+    │   ├── native_2phase_sample/                   #   가상: Native 2-phase, plateau OCP
+    │   ├── native_2phase_equal_radius_sample/      #   가상: R_R3m=R_C2m=1μm
+    │   ├── native_2phase_equal_radius_150nm_sample/#   가상: R_R3m=R_C2m=150nm
+    │   ├── native_2phase_gaussian_redox_sample/    #   가상: Gaussian OCP (초기 중심)
+    │   ├── native_2phase_gaussian_redox_fullrange_sample/
+    │   ├── native_2phase_gaussian_redox_fullrange_D100x_slow_sample/
+    │   ├── native_2phase_gaussian_redox_swapped_centers_D100x_slow_sample/
+    │   └── native_2phase_gaussian_c2m_low_broad_2x_D100x_slow_sample/  # ★ 최종 기준 데이터
+    │
+    ├── generated_initial_condition/                # 초기 조건 탐색 과정 전체 아카이브
+    │   ├── README.md                               #   최종 케이스 + 재현 명령
+    │   ├── comparisons/                            #   비교 실험 데이터 (중간 단계)
+    │   ├── final/                                  #   최종 선택 케이스
+    │   ├── reports/                                #   각 단계 검증 보고서 (md)
+    │   └── scripts/                                #   생성 당시 스크립트 사본
+    │
+    ├── reports/                                    # 파이프라인 결과물
+    │   ├── inference/cycle_001/ ... cycle_NNN/     #   Stage 4a 추론 결과
+    │   └── result_report_YYMMDD_HHMMSS/            #   Stage 7 전체 보고서 (생성 시)
+    │
+    ├── processed/                                  # Stage 1a 파싱 결과 (생성 시)
+    ├── synthetic/                                  # Stage 2 합성 데이터셋 (생성 시)
+    └── models/inverse/                             # Stage 3 학습 모델 (생성 시)
+```
+
+---
+
+### 3. 환경 설치
+
+```bash
+cd lmro_2phase_inverse
+bash setup_env.sh          # .venv 생성 + 전체 의존성 설치
+source .venv/bin/activate
+```
+
+`setup_env.sh`는 플랫폼을 자동 감지합니다:
+- **x86_64**: `pip install -e ".[dev]"` 단순 설치
+- **aarch64**: cmake 빌드 후 idaklu C++ 확장 로드 테스트 → 실패 시 `scripts/patches/` 의 Python/casadi stub 자동 적용 (casadi ABI 불일치 대응)
+
+설치 확인:
+```bash
+python -c "import pybamm; print(pybamm.__version__)"
+python -c "import lmro2phase; print(lmro2phase.__version__)"
+```
+
+---
+
+### 4. 파이프라인 스크립트 — 입출력 상세
+
+모든 스크립트는 프로젝트 루트(`lmro_2phase_inverse/`)에서 실행합니다.  
+콘솔 명령(`lmro-*`)은 `pip install -e ".[dev]"` 후 사용 가능합니다.
+
+---
+
+#### `scripts/00_smoke_test_pybamm_halfcell.py`
+
+**목적**: PyBaMM 설치 확인 및 2-phase 지원 전략 판별
+
+| | |
+|--|--|
+| **입력** | 없음 |
+| **출력** | `data/reports/smoke_test_report.json` |
+| **콘솔 명령** | `lmro-smoke` |
+
+```bash
+python scripts/00_smoke_test_pybamm_halfcell.py
+```
+
+출력 JSON의 `selected_strategy` 값:
+- `"native"` → PyBaMM이 `particle_phases=("1","2")`를 지원 (이후 native 2-phase 사용)
+- `"fallback_a"` → 지원 안 됨 (이후 가중 혼합 OCP surrogate 사용)
+
+---
+
+#### `scripts/01_parse_toyo_ascii.py`
+
+**목적**: TOYO CSV → 정규화된 BatteryProfile parquet
+
+| | |
+|--|--|
+| **입력** | TOYO CSV 파일 (기본: `data/raw/toyo/Toyo_LMR_HalfCell_Sample_50cycles.csv`) |
+| | `configs/toyo_ascii.yaml` (인코딩·구분자·컬럼·부호 설정) |
+| **출력** | `data/processed/<원본파일명>_processed.parquet` |
+| **콘솔 명령** | `lmro-parse [--input 경로] [--config 경로] [--out_dir 경로]` |
+
+```bash
+python scripts/01_parse_toyo_ascii.py \
+  --input  data/raw/toyo/Toyo_LMR_HalfCell_Sample_50cycles.csv \
+  --config configs/toyo_ascii.yaml \
+  --out_dir data/processed
+```
+
+파서가 자동 처리하는 항목: 인코딩·구분자·헤더 행 탐색, `Current(mA)→A`, `Capacity(mAh)→Ah`, 전류 부호 통일, Mode 레이블 표준화.
+
+---
+
+#### `scripts/02_fit_tanh_ocp.py`
+
+**목적**: 실측/가상 1사이클 데이터를 기반으로 R3m/C2m tanh OCP 파라미터 초기 피팅
+
+| | |
+|--|--|
+| **입력** | `configs/stage1_fit_tanh.yaml` (`input.data_file`, `input.use_cycles` 등 포함) |
+| | 실측/가상 CSV (`input.data_file`에 지정) |
+| **출력** | `data/reports/stage1_fit/best_params.json` — D, R, frac, contact_R 스칼라 |
+| | `data/reports/stage1_fit/best_ocp_tanh_R3m.json` — tanh basis (b0, b1, amps, centers, widths) |
+| | `data/reports/stage1_fit/best_ocp_tanh_C2m.json` — 동일 구조 |
+| | `data/reports/stage1_fit/ocp_phase_plot.png` — 피팅된 OCP 형상 플롯 |
+| **콘솔 명령** | `lmro-fit-ocp [--config 경로]` |
+
+```bash
+# 기본 실행 (200 trials Optuna + scipy L-BFGS-B)
+python scripts/02_fit_tanh_ocp.py
+
+# 빠른 설정 확인 (20 trials)
+python scripts/02_fit_tanh_ocp.py --config configs/stage1_fit_tanh_quicktest.yaml
+```
+
+최적화 흐름: `Optuna TPE (n_trials)` → `scipy L-BFGS-B (max_iter)` → best 저장  
+손실 함수 항목: `w_v_q·V(Q) + w_v_t·V(t) + w_dvdq·dV/dQ + w_dqdv·dQ/dV + w_rest·rest잔차 + w_ocp_smooth·OCP평활 + w_bounds·경계`
+
+---
+
+#### `scripts/03_generate_synthetic_dataset.py`
+
+**목적**: Stage 1 피팅 결과 주변 파라미터를 샘플링하여 대량의 synthetic 충방전 데이터 생성
+
+| | |
+|--|--|
+| **입력** | `configs/stage2_generate_synthetic.yaml` |
+| | `data/reports/stage1_fit/best_params.json` (Stage 1 결과) |
+| | `data/reports/stage1_fit/best_ocp_tanh_*.json` (OCP base) |
+| **출력** | `data/synthetic/params.parquet` — 성공 케이스 스칼라 파라미터 (N×9) |
+| | `data/synthetic/profiles.zarr` — V/I 시계열 (N × 시간점) |
+| | `data/synthetic/ocp_profiles.zarr` — OCP 그리드 (N × 2 phase × 256점) |
+| | `data/synthetic/failed_cases.parquet` — 시뮬레이션 실패 로그 |
+| **콘솔 명령** | `lmro-generate [--n_samples N] [--n_workers W]` |
+
+```bash
+# 기본 실행 (configs에서 n_samples 읽음)
+python scripts/03_generate_synthetic_dataset.py
+
+# 규모 지정
+python scripts/03_generate_synthetic_dataset.py --n_samples 5000 --n_workers 4
+```
+
+샘플링 전략: `local` (Stage 1 주변 좁은 범위) / `broad` (사전 분포 전체) / `edge` (극단값)  
+OCP 변동 방식 (6종): GP, spline, plateau, transition, shoulder, tanh  
+시뮬레이션 모델: SPMe or DFN (configs에서 비율 설정), `pybamm.Experiment`
+
+---
+
+#### `scripts/04_train_inverse_model.py`
+
+**목적**: Synthetic dataset으로 DL inverse model 학습 (features → physics parameters + OCP)
+
+| | |
+|--|--|
+| **입력** | `configs/stage3_train_inverse.yaml` |
+| | `data/synthetic/params.parquet` |
+| | `data/synthetic/profiles.zarr` |
+| | `data/synthetic/ocp_profiles.zarr` |
+| **출력** | `data/models/inverse/best_model.pt` — 학습된 체크포인트 |
+| **콘솔 명령** | `lmro-train [--overfit_test]` |
+
+```bash
+# 본 학습
+python scripts/04_train_inverse_model.py
+
+# overfit 빠른 검증 (100샘플, 500 epoch)
+python scripts/04_train_inverse_model.py --overfit_test
+```
+
+모델 구조: 1D CNN ResBlock (kernel=7, 6 블록) → 선택적 Transformer (8-head, 2 layer) → GlobalAvgPool  
+출력 헤드: 스칼라 [B,9] + OCP_R3m [B,256] + OCP_C2m [B,256]  
+입력 feature: [B, 10, 512] — V_chg, I_chg, V_dchg, I_dchg, dV/dQ×2, dQ/dV×2 등 10채널
+
+---
+
+#### `scripts/05_infer_lmr_profile.py`
+
+**목적**: 학습된 모델로 실측/가상 사이클에서 R3m/C2m 파라미터 추론
+
+| | |
+|--|--|
+| **입력** | `configs/stage4_infer_validate.yaml` |
+| | TOYO CSV 파일 (stage4 config에서 지정) |
+| | `data/models/inverse/best_model.pt` |
+| **출력** | `data/reports/inference/cycle_NNN/predicted_params.json` — 추론된 D, R, frac 등 |
+| | `data/reports/inference/cycle_NNN/predicted_ocp_R3m.csv` — (stoichiometry, voltage) × 256 |
+| | `data/reports/inference/cycle_NNN/predicted_ocp_C2m.csv` — 동일 구조 |
+| **콘솔 명령** | `lmro-infer [--config 경로]` |
+
+```bash
+python scripts/05_infer_lmr_profile.py
+```
+
+---
+
+#### `scripts/06_forward_validate.py`
+
+**목적**: 추론된 파라미터로 PyBaMM 재시뮬레이션 → 측정값과 잔차 비교
+
+| | |
+|--|--|
+| **입력** | `configs/stage4_infer_validate.yaml` |
+| | `data/reports/inference/cycle_NNN/predicted_params.json` |
+| | `data/reports/inference/cycle_NNN/predicted_ocp_*.csv` |
+| | 원본 TOYO CSV (재시뮬레이션 기준 전류 프로파일) |
+| **출력** | `data/reports/inference/cycle_NNN/forward_validation.png` — V-t / dQ-dV 오버레이 플롯 |
+| | `data/reports/inference/cycle_NNN/residual_summary.json` — RMSE, MAE, max_err (V) |
+| **콘솔 명령** | `lmro-validate [--config 경로]` |
+
+```bash
+python scripts/06_forward_validate.py
+```
+
+---
+
+#### `scripts/07_generate_report.py`
+
+**목적**: 파이프라인 전 단계 결과를 하나의 Markdown 보고서로 통합
+
+| | |
+|--|--|
+| **입력** | `data/raw/toyo/*.csv` (입력 데이터 플롯) |
+| | `data/reports/stage1_fit/` (OCP 피팅 결과) |
+| | `data/reports/inference/` (추론 결과) |
+| | `data/synthetic/` (데이터셋 통계) |
+| **출력** | `data/reports/result_report_YYMMDD_HHMMSS/result_report_YYMMDD_HHMMSS.md` |
+| | 동 디렉토리에 그림 파일들 (`fig_01_*.png`, ...) |
+| **콘솔 명령** | `lmro-report` |
+
+```bash
+python scripts/07_generate_report.py
+```
+
+---
+
+### 5. 보조 스크립트 — 입출력 상세
+
+#### `scripts/generate_toyo_sech2_pybamm_sample.py`
+
+**목적**: Effective SPMe + tanh/sech² OCP 가상 데이터 생성 (FallbackA 경로)
+
+| | |
+|--|--|
+| **입력** | CLI 인수 (아래 참조) |
+| **출력** | `--out-dir/Toyo_LMR_sech2_PyBaMM_*.csv` — TOYO 형식 충방전 CSV |
+| | `--out-dir/ocp_dqdv_sech2_basis.csv` — OCP/dQ-dV 기저 그리드 |
+| | `--out-dir/true_parameters.json` — 시뮬레이션 조건 + tanh OCP 파라미터 전체 |
+| | `--out-dir/roundtrip_recovery_check.json` — 파서 round-trip 검증 |
+
+```bash
+python scripts/generate_toyo_sech2_pybamm_sample.py \
+  --model    SPMe \
+  --c-rates  0.1 0.33 0.5 1.0 2.0 \
+  --out-dir  data/raw/toyo/sech2_pybamm_sample
+```
+
+**주요 인수:**
+
+| 인수 | 기본값 | 설명 |
+|------|--------|------|
+| `--model` | `SPMe` | `SPM`, `SPMe`, `DFN` 중 선택 |
+| `--c-rates` | `0.1 0.33 0.5 1.0 2.0` | 사이클별 C-rate (복수 가능) |
+| `--voltage-lower` | `2.5` V | 방전 종지 전압 |
+| `--voltage-upper` | `4.65` V | 충전 종지 전압 |
+| `--rest-minutes` | `10.0` | 충방전 사이 rest 시간 (분) |
+| `--period-s` | `5.0` | 출력 시간 해상도 (초) |
+| `--out-dir` | `data/raw/toyo/sech2_pybamm_sample` | 출력 폴더 |
+
+---
+
+#### `scripts/generate_toyo_native_2phase_sample.py`
+
+**목적**: PyBaMM native 2-phase SPM 가상 데이터 생성 (R3m/C2m 개별 파라미터 주입)
+
+| | |
+|--|--|
+| **입력** | CLI 인수 (아래 참조) |
+| **출력** | `--out-dir/Toyo_LMR_native2phase_PyBaMM_{C-rate}.csv` — TOYO 형식 충방전 CSV |
+| | `--out-dir/native_phase_ocp_basis.csv` — (stoichiometry, U_R3m, U_C2m, U_weighted) |
+| | `--out-dir/true_native_2phase_parameters.json` — 전체 조건 (OCP 형상 포함) |
+| | `--out-dir/phase_concentration_summary.json` — 사이클별 농도 추이 |
+| | `--out-dir/roundtrip_check.json` — 파서 round-trip 검증 |
+
+```bash
+# 최종 기준 케이스 재현
+python scripts/generate_toyo_native_2phase_sample.py \
+  --ocp-shape    gaussian \
+  --phase-radius-m 1.5e-7 \
+  --d-r3m-m2-s   4.59e-17 \
+  --d-c2m-m2-s   1.0e-18 \
+  --r3m-center-v 3.7  --c2m-center-v 3.2 \
+  --r3m-sigma-v  0.075 --c2m-sigma-v  0.18 \
+  --frac-r3m     0.3333333333 \
+  --c-rates      0.1 0.33 0.5 1.0 \
+  --out-dir      data/raw/toyo/native_2phase_gaussian_c2m_low_broad_2x_D100x_slow_sample
+```
+
+**주요 인수:**
+
+| 인수 | 기본값 | 설명 |
+|------|--------|------|
+| `--ocp-shape` | `plateau` | `plateau` 또는 `gaussian` |
+| `--frac-r3m` | `0.60` | R3m 상 분율 (0~1) |
+| `--d-r3m-m2-s` | *(default_truth)* | R3m 확산계수 (m²/s) |
+| `--d-c2m-m2-s` | *(default_truth)* | C2m 확산계수 (m²/s) |
+| `--phase-radius-m` | *(default_truth)* | 두 phase 공통 반경 (m) |
+| `--r3m-center-v` | `3.18` | R3m Gaussian OCP 중심 전압 (V) |
+| `--c2m-center-v` | `3.82` | C2m Gaussian OCP 중심 전압 (V) |
+| `--r3m-sigma-v` | `0.075` | R3m Gaussian OCP 폭 σ (V) |
+| `--c2m-sigma-v` | `0.080` | C2m Gaussian OCP 폭 σ (V) |
+| `--c-rates` | `0.1 0.33 0.5 1.0` | 사이클별 C-rate |
+| `--voltage-lower` | `2.5` | 방전 종지 전압 (V) |
+| `--voltage-upper` | `4.65` | 충전 종지 전압 (V) |
+| `--rest-minutes` | `10.0` | 충방전 사이 rest (분) |
+| `--period-s` | `0.5` | 시간 해상도 (초) |
+| `--initial-fraction` | `0.98` | 초기 SOC 분율 |
+| `--out-dir` | `data/raw/toyo/native_2phase_sample` | 출력 폴더 |
+
+---
+
+#### `scripts/analyze_native_2phase_sample.py`
+
+**목적**: native 2-phase 시뮬레이션 결과의 dQ/dV 분석·플롯 생성 (`generate_toyo_native_2phase_sample.py` 후처리)
+
+| | |
+|--|--|
+| **입력** | `--out-dir` (위 스크립트 출력 폴더) |
+| | `--csv` (폴더 내 CSV 파일명, 기본: 폴더 내 자동 탐색) |
+| | `--grid-v` (dQ/dV 계산 전압 해상도, 기본: 0.01 V) |
+| **출력** | `--out-dir/native_2phase_dqdv_overlay_by_crate.png` — C-rate별 방전 dQ/dV 오버레이 |
+| | `--out-dir/native_2phase_dqdv_overlay_summary.json` — 피크 전압·진폭 수치 |
+| | `--out-dir/native_2phase_protocol_step_summary.json` — 충방전 step 요약 |
+| | `--out-dir/native_2phase_monotonicity_check.json` — OCP 단조성 검증 |
+
+```bash
+python scripts/analyze_native_2phase_sample.py \
+  --out-dir data/raw/toyo/native_2phase_gaussian_c2m_low_broad_2x_D100x_slow_sample \
+  --grid-v  0.01
+```
+
+---
+
+### 6. 설정 파일 레퍼런스
+
+#### `configs/env.yaml`
+
+```yaml
+python:
+  venv_path: ".venv"
+
+torch:
+  index_url: ""          # "" = CPU / PyPI 기본값
+  device: "auto"         # "auto" | "cpu" | "cuda" | "cuda:0"
+
+parallel:
+  n_jobs: 4              # Stage 2 병렬 프로세스 수
+  pybamm_nthreads: 1     # PyBaMM 내부 OpenMP 스레드 수
+
+paths:
+  data_root:  "data"
+  raw_data:   "data/raw/toyo"
+  processed:  "data/processed"
+  synthetic:  "data/synthetic"
+  models:     "data/models"
+  reports:    "data/reports"
+
+seed: 42
+log_level: "INFO"
+```
+
+#### `configs/toyo_ascii.yaml`
+
+| 설정 항목 | 역할 |
+|---------|------|
+| `encoding_candidates` | UTF-8, CP932, Shift-JIS 등 순서대로 시도 |
+| `column_aliases` | `Voltage(V)`, `電圧`, `V` 등 → `voltage_v` 로 통일 |
+| `unit_conversion.current_ma_to_a` | `Current(mA)` → A 자동 변환 |
+| `current_sign.discharge_positive_in_file` | 파일 내 방전 부호 (TOYO: `false`) |
+| `mode_label_map` | `CC-Chg`, `CC-Dchg`, `Rest` → `StepMode` enum |
+| `protocol_detection` | Mode 컬럼 없을 때 전류·전압 패턴으로 자동 분류 |
+
+#### `configs/stage1_fit_tanh.yaml`
+
+```yaml
+input:
+  data_file: "data/raw/toyo/native_2phase_gaussian_c2m_low_broad_2x_D100x_slow_sample/
+              Toyo_LMR_native2phase_PyBaMM_0p1C_0p33C_0p5C_1C.csv"
+  toyo_config: "configs/toyo_ascii.yaml"
+  use_cycles: [1]         # 사용할 사이클 번호 목록
+
+fitting:
+  tanh_ocp:
+    n_terms: 5
+  optimizer:
+    global_search:
+      n_trials: 200
+      n_jobs: 1
+      timeout_s: 3600
+    local:
+      max_iter: 500
+  loss_weights:
+    w_v_q: 1.0
+    w_v_t: 0.3
+    w_dvdq: 2.0
+    w_dqdv: 2.0
+    w_rest: 0.5
+    w_ocp_smooth: 0.5
+    w_bounds: 10.0
+
+output:
+  report_dir: "data/reports/stage1_fit"
+```
+
+---
+
+### 7. 생성된 가상 데이터 샘플 목록
+
+`data/raw/toyo/` 에 있는 모든 가상 데이터 샘플의 파라미터 요약:
+
+| 샘플 폴더 | OCP 형상 | frac_R3m | D_R3m (m²/s) | D_C2m (m²/s) | R (m) | R3m 중심 (V) | C2m 중심 (V) |
+|---------|---------|---------|-------------|-------------|------|------------|------------|
+| `sech2_pybamm_sample` | tanh (Effective) | 0.62 | 4.59e-15 | 1.00e-16 | R3m:150nm / C2m:1μm | ~3.25† | ~3.75† |
+| `native_2phase_sample` | plateau | 0.60 | 4.59e-15 | 1.00e-16 | R3m:150nm / C2m:1μm | 2.80† | 3.95† |
+| `native_2phase_equal_radius_sample` | plateau | 0.60 | 4.59e-15 | 1.00e-16 | 1μm / 1μm | 2.80† | 3.95† |
+| `native_2phase_equal_radius_150nm_sample` | plateau | 0.60 | 4.59e-15 | 1.00e-16 | 150nm / 150nm | 2.80† | 3.95† |
+| `native_2phase_gaussian_redox_sample` | gaussian | 0.60 | 4.59e-15 | 1.00e-16 | 150nm / 150nm | 3.18 (σ=0.075) | 3.82 (σ=0.08) |
+| `native_2phase_gaussian_redox_fullrange_sample` | gaussian | 0.60 | 4.59e-15 | 1.00e-16 | 150nm / 150nm | 3.18 (σ=0.075) | 3.82 (σ=0.08) |
+| `native_2phase_gaussian_redox_fullrange_D100x_slow_sample` | gaussian | 0.60 | **4.59e-17** | **1.00e-18** | 150nm / 150nm | 3.18 (σ=0.075) | 3.82 (σ=0.08) |
+| `native_2phase_gaussian_redox_swapped_centers_D100x_slow_sample` | gaussian | 0.60 | 4.59e-17 | 1.00e-18 | 150nm / 150nm | **3.70** (σ=0.075) | **3.20** (σ=0.08) |
+| **`native_2phase_gaussian_c2m_low_broad_2x_D100x_slow_sample` ★** | gaussian | **0.333** | 4.59e-17 | 1.00e-18 | 150nm / 150nm | 3.70 (σ=0.075) | **3.20 (σ=0.18)** |
+
+†: plateau OCP는 dU/ds Gaussian 형상으로 설계된 피크 위치 (전압축 직접 기입 아님)  
+★: 최종 기준 데이터 — `data/generated_initial_condition/final/` 에 사본 있음
+
+---
+
+### 8. 데이터 흐름 요약
+
+```
+[Native 2-phase 경로]
+
+  CLI args
+   ├─ frac_R3m, D_R3m, D_C2m, R
+   └─ r3m_center_v, r3m_sigma_v, c2m_center_v, c2m_sigma_v
+         │
+         ▼ _gaussian_redox_ocp() 또는 _plateau_ocp()
+  InterpOCP_R3m, InterpOCP_C2m
+         │
+         ▼ build_native_params(truth, ocp_R3m, ocp_C2m)
+  pybamm.ParameterValues (Primary/Secondary 각각 주입)
+         │
+         ▼ build_native_model()
+  pybamm.lithium_ion.SPM(particle_phases=("1","2"))
+         │
+         ▼ pybamm.Experiment([Charge/Rest/Discharge/Rest])
+         ▼ pybamm.CasadiSolver(mode="safe", rtol=1e-5, atol=1e-7)
+         ▼ sim.solve()
+  time_s, voltage_v, current_a
+         │
+         ▼ TOYO 형식 CSV + true_native_2phase_parameters.json
+
+────────────────────────────────────────────────
+
+[Inverse pipeline 경로]
+
+  TOYO CSV
+   └─ ToyoAsciiParser(toyo_ascii.yaml)
+         │
+  BatteryProfile(time_s, voltage_v, current_a, segments)
+         │
+  [Stage 1] compute_loss() ← run_current_drive(SPMe model, pv, t, I)
+         ↓ Optuna + scipy L-BFGS-B
+  best_params.json + best_ocp_tanh_*.json
+         │
+  [Stage 2] perturb_ocp_grid() + run_experiment(SPMe/DFN)
+         ↓ N=1000~50000 케이스
+  synthetic/{params.parquet, profiles.zarr, ocp_profiles.zarr}
+         │
+  [Stage 3] SyntheticDataset → feature tensor [10,512]
+         ↓ InverseModel (CNN+Transformer)
+  best_model.pt
+         │
+  [Stage 4a] infer_profile() → predicted_params.json + predicted_ocp_*.csv
+  [Stage 4b] forward_validate() → forward_validation.png + residual_summary.json
+         │
+  [Stage 7] 전체 보고서 생성 → result_report_YYMMDD_HHMMSS/
+```
+
+---
+
+### 9. 테스트 실행
+
+```bash
+# 전체 테스트 (PyBaMM + PyTorch 필요)
+pytest
+
+# PyBaMM 없이 빠른 유닛 테스트
+pytest tests/test_toyo_parser.py tests/test_ocp_tanh.py \
+       tests/test_ocp_grid.py tests/test_profile_resampling.py
+
+# DL 모델 overfit 테스트 (수십 초)
+pytest tests/test_inverse_model_overfit.py -v
+
+# coverage
+pytest --cov=lmro2phase --cov-report=term-missing
+```
+
+| 테스트 파일 | 검증 내용 |
+|---------|---------|
+| `test_toyo_parser.py` | 실제 CSV·합성 CSV·일본어 헤더 파싱, round-trip |
+| `test_ocp_tanh.py` | tanh OCP numpy/PyBaMM 평가, 직렬화 round-trip |
+| `test_ocp_grid.py` | 256점 grid 생성, smoothing, 6가지 변동 모드 |
+| `test_profile_resampling.py` | 용량 격자 보간, feature tensor 형태/NaN |
+| `test_stage1_objective.py` | Stage 1 loss 유한값 반환 (PyBaMM 필요) |
+| `test_inverse_model_overfit.py` | 100샘플 500 epoch 과적합 확인 (PyTorch 필요) |
+
+---
+
+<!-- ============================================================ -->
+<!-- 초기 README (작성 당시)                                      -->
+<!-- ============================================================ -->
+
+---
+
+## ─── 초기 README (작성 당시) ───
+
+---
+
+# lmro-2phase-inverse
+
 LMR(Li-rich Mn-rich) 양극 / Li metal 음극 half-cell 데이터에서
 **2-phase(rhombohedral R3m + monoclinic C2m) OCP 및 전송 파라미터**를 역추정하는 파이프라인입니다.
 

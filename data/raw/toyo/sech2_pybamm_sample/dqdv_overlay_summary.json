@@ -1,0 +1,92 @@
+[
+  {
+    "C_rate": 0.1,
+    "mode": "CC-Chg",
+    "points": 5104,
+    "voltage_min_v": 2.597222,
+    "voltage_max_v": 4.64999,
+    "dqdv_peak_signed_mAh_per_V": 5.13349955276882,
+    "dqdv_peak_voltage_v": 4.475587
+  },
+  {
+    "C_rate": 0.1,
+    "mode": "CC-Dchg",
+    "points": 4902,
+    "voltage_min_v": 2.50001,
+    "voltage_max_v": 4.456858,
+    "dqdv_peak_signed_mAh_per_V": -5.1345242508111255,
+    "dqdv_peak_voltage_v": 4.282864
+  },
+  {
+    "C_rate": 0.33,
+    "mode": "CC-Chg",
+    "points": 1486,
+    "voltage_min_v": 2.659789,
+    "voltage_max_v": 4.64999,
+    "dqdv_peak_signed_mAh_per_V": 4.895079480818679,
+    "dqdv_peak_voltage_v": 4.536766
+  },
+  {
+    "C_rate": 0.33,
+    "mode": "CC-Dchg",
+    "points": 1384,
+    "voltage_min_v": 2.50001,
+    "voltage_max_v": 4.334546,
+    "dqdv_peak_signed_mAh_per_V": -4.898408737318398,
+    "dqdv_peak_voltage_v": 4.222412
+  },
+  {
+    "C_rate": 0.5,
+    "mode": "CC-Chg",
+    "points": 968,
+    "voltage_min_v": 2.682792,
+    "voltage_max_v": 4.64999,
+    "dqdv_peak_signed_mAh_per_V": 4.542073245383395,
+    "dqdv_peak_voltage_v": 4.559318
+  },
+  {
+    "C_rate": 0.5,
+    "mode": "CC-Dchg",
+    "points": 890,
+    "voltage_min_v": 2.50001,
+    "voltage_max_v": 4.290725,
+    "dqdv_peak_signed_mAh_per_V": -4.546610354501747,
+    "dqdv_peak_voltage_v": 4.201782
+  },
+  {
+    "C_rate": 1.0,
+    "mode": "CC-Chg",
+    "points": 472,
+    "voltage_min_v": 2.723385,
+    "voltage_max_v": 4.64999,
+    "dqdv_peak_signed_mAh_per_V": 4.385529284427436,
+    "dqdv_peak_voltage_v": 4.64999
+  },
+  {
+    "C_rate": 1.0,
+    "mode": "CC-Dchg",
+    "points": 423,
+    "voltage_min_v": 2.50001,
+    "voltage_max_v": 4.216357,
+    "dqdv_peak_signed_mAh_per_V": -4.741858001398274,
+    "dqdv_peak_voltage_v": 4.216357
+  },
+  {
+    "C_rate": 2.0,
+    "mode": "CC-Chg",
+    "points": 227,
+    "voltage_min_v": 2.768708,
+    "voltage_max_v": 4.64999,
+    "dqdv_peak_signed_mAh_per_V": 4.295314408271315,
+    "dqdv_peak_voltage_v": 4.64999
+  },
+  {
+    "C_rate": 2.0,
+    "mode": "CC-Dchg",
+    "points": 198,
+    "voltage_min_v": 2.50001,
+    "voltage_max_v": 4.14036,
+    "dqdv_peak_signed_mAh_per_V": -4.107641130610423,
+    "dqdv_peak_voltage_v": 4.14036
+  }
+]
