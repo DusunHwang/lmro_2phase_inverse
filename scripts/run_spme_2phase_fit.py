@@ -29,8 +29,10 @@ frac, D, R, Gaussian OCP(center/sigma)를 추정한다.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import importlib.util
 import json
+import multiprocessing
 import os
 import sys
 import time
@@ -188,6 +190,41 @@ class Monitor:
         print(f"{'='*76}")
 
 
+# ─── 병렬 워커 ──────────────────────────────────────────────────────────────────
+# fork 컨텍스트 사용: 모델 빌드 후 첫 solve 전에 fork하면 CasADi 컴파일 함수를
+# 공유 메모리로 상속하므로 워커 초기화 오버헤드가 없다.
+
+_w_model = None   # 워커 프로세스에서 사용할 SPMe 모델 (fork 전 부모에서 설정)
+_w_gen   = None   # 워커 프로세스에서 사용할 gen 모듈
+_POOL: "concurrent.futures.ProcessPoolExecutor | None" = None
+
+
+def _cycle_worker(payload: tuple) -> float:
+    """워커 태스크: 포크된 전역 _w_model/_w_gen 으로 1 사이클 loss 계산."""
+    v_clip, time_s, current_a, voltage_ref = payload
+    phys, d = _vec_to_phys(v_clip)
+    pv = _build_pybamm_params(_w_gen, phys, d)
+    return _cycle_loss(_w_model, pv, time_s, current_a, voltage_ref)
+
+
+def _init_pool(n_jobs: int, spme_model, gen) -> None:
+    """fork 기반 프로세스 풀을 초기화한다.
+
+    첫 PyBaMM solve 전에 fork해야 CasADi JIT 컴파일 함수를
+    자식 프로세스가 clean하게 상속한다.
+    """
+    global _w_model, _w_gen, _POOL
+    if n_jobs <= 1:
+        return
+    _w_model = spme_model
+    _w_gen   = gen
+    ctx  = multiprocessing.get_context("fork")
+    _POOL = concurrent.futures.ProcessPoolExecutor(
+        max_workers=n_jobs, mp_context=ctx
+    )
+    print(f"  프로세스 풀 초기화: {n_jobs} workers  (fork, PID={os.getpid()})", flush=True)
+
+
 # ─── 시뮬레이션 & Loss ────────────────────────────────────────────────────────
 
 @dataclass
@@ -272,18 +309,27 @@ def _cycle_loss(spme_model, pv,
 def compute_loss(v_vec: np.ndarray,
                   gen, spme_model,
                   cycles_data: list[tuple]) -> float:
-    """멀티 C-rate 동시 loss (사이클 평균)."""
-    v_clip = np.clip(v_vec, LOWER, UPPER)
-    try:
-        phys, d = _vec_to_phys(v_clip)
-        pv = _build_pybamm_params(gen, phys, d)
-    except Exception:
-        return 1e9
+    """멀티 C-rate 동시 loss (사이클 평균).
 
-    total = 0.0
-    for time_s, current_a, voltage_ref in cycles_data:
-        total += _cycle_loss(spme_model, pv, time_s, current_a, voltage_ref)
-    return total / max(len(cycles_data), 1)
+    _POOL 이 초기화된 경우 각 사이클을 별도 프로세스에서 병렬 실행한다.
+    """
+    v_clip = np.clip(v_vec, LOWER, UPPER)
+
+    if _POOL is not None:
+        try:
+            payloads = [(v_clip, t, i, v) for t, i, v in cycles_data]
+            losses   = list(_POOL.map(_cycle_worker, payloads))
+        except Exception:
+            return 1e8
+    else:
+        try:
+            phys, d = _vec_to_phys(v_clip)
+            pv = _build_pybamm_params(gen, phys, d)
+        except Exception:
+            return 1e9
+        losses = [_cycle_loss(spme_model, pv, t, i, v) for t, i, v in cycles_data]
+
+    return sum(losses) / max(len(losses), 1)
 
 
 # ─── Optuna 탐색 ──────────────────────────────────────────────────────────────
@@ -467,14 +513,22 @@ def main(args):
         "surface form":      "differential",
     }
     spme_model = pybamm.lithium_ion.SPMe(options)
-    print("  모델 초기화 완료.\n")
+    print("  모델 초기화 완료.")
 
-    best_optuna = run_optuna(gen, spme_model, cycles_data,
-                              monitor, args.n_optuna, args.seed, out_dir)
-    best_final  = run_scipy(best_optuna, gen, spme_model, cycles_data,
-                             monitor, args.n_scipy, out_dir)
+    # 병렬 풀 초기화: 첫 solve 전에 fork해야 CasADi 함수를 clean하게 상속
+    _init_pool(args.n_jobs, spme_model, gen)
+    print()
 
-    save_results(best_final, monitor, args.true_params, out_dir)
+    try:
+        best_optuna = run_optuna(gen, spme_model, cycles_data,
+                                  monitor, args.n_optuna, args.seed, out_dir)
+        best_final  = run_scipy(best_optuna, gen, spme_model, cycles_data,
+                                 monitor, args.n_scipy, out_dir)
+        save_results(best_final, monitor, args.true_params, out_dir)
+    finally:
+        if _POOL is not None:
+            _POOL.shutdown(wait=False)
+
     print(f"\n  출력 경로: {out_dir}")
 
 
@@ -503,5 +557,9 @@ if __name__ == "__main__":
     parser.add_argument("--n-optuna",  type=int, default=80)
     parser.add_argument("--n-scipy",   type=int, default=500)
     parser.add_argument("--seed",      type=int, default=42)
+    parser.add_argument(
+        "--n-jobs", type=int, default=4,
+        help="병렬 워커 수 (4 C-rate 사이클 동시 평가). 1=순차, 4=기본",
+    )
     args = parser.parse_args()
     main(args)
