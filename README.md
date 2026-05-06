@@ -3,6 +3,80 @@
 ---
 
 <!-- ============================================================ -->
+<!-- 업데이트: 2026-05-07 00:32:58 KST — LMR 2상 fitting 스크립트 일반화 -->
+<!-- ============================================================ -->
+
+## 2026-05-07 00:32:58 KST 업데이트 — LMR 2상 fitting/report 스크립트 일반화
+
+이번 업데이트에서는 SPMe 전용으로 보이던 2상 역추정 스크립트명을 DFN/SPMe 공용 이름으로 정리하고,
+dQ/dV 기반 fitting 입력 샘플링 및 리포트 기록 방식을 보강했다.
+
+### 주요 변경사항
+
+| 구분 | 기존 | 변경 후 |
+|:---|:---|:---|
+| 2상 fitting 엔진 | `scripts/run_spme_2phase_fit.py` | `scripts/run_lmr_2phase_fit.py` |
+| fitting report 생성기 | `scripts/generate_spme_fit_report.py` | `scripts/generate_lmr_fit_report.py` |
+| DFN 전용 실행 wrapper | 없음 | `scripts/run_dfn_2phase_fit.py` |
+| fitting model 선택 | SPMe 중심 | `--fit-model SPMe` 또는 `--fit-model DFN` |
+| 결과 폴더명 | 사용자 지정 이름 그대로 사용 | `YYMMDD_hhmm_` prefix 자동 부여 |
+| timestamp 기준 | Docker local time/UTC 영향 가능 | KST 고정 |
+| dQ/dV fitting sampling | 균일 time subsample | 충전/방전 branch별 목표 point 수 기반 가변 sampling |
+| dQ/dV loss | 방전 branch 중심 | 충전/방전 branch 모두 사용 |
+
+### 현재 권장 실행 예시
+
+DFN fitting model, dQ/dV-only loss, 충전/방전 각각 약 200 point, Optuna 120 trial:
+
+```bash
+.venv/bin/python scripts/run_dfn_2phase_fit.py \
+  --out-dir data/fit_results/DFN_2phase_병렬_optun_dqdv_charge_discharge_200pt \
+  --data-csv data/raw/toyo/lmr_dfn_2phase_sample/Toyo_LMR_DFN_2phase_0p1C_0p33C_0p5C_1C.csv \
+  --true-params data/raw/toyo/lmr_dfn_2phase_sample/true_lmr_dfn_parameters.json \
+  --n-optuna 120 \
+  --n-scipy 0 \
+  --n-jobs 20 \
+  --optuna-cycle-workers 4 \
+  --branch-points 200 \
+  --loss-w-vt 0 \
+  --loss-w-vq 0 \
+  --loss-w-dqdv 1
+```
+
+동일 엔진에서 SPMe를 직접 선택하려면:
+
+```bash
+.venv/bin/python scripts/run_lmr_2phase_fit.py \
+  --fit-model SPMe \
+  --out-dir data/fit_results/SPMe_2phase_병렬_optun_dqdv_charge_discharge_200pt \
+  --branch-points 200 \
+  --n-optuna 120 \
+  --n-scipy 0 \
+  --n-jobs 20 \
+  --optuna-cycle-workers 4 \
+  --loss-w-vt 0 \
+  --loss-w-vq 0 \
+  --loss-w-dqdv 1
+```
+
+결과 리포트 생성:
+
+```bash
+.venv/bin/python scripts/generate_lmr_fit_report.py \
+  --fit-dir data/fit_results/<YYMMDD_hhmm_...결과폴더> \
+  --data-csv data/raw/toyo/lmr_dfn_2phase_sample/Toyo_LMR_DFN_2phase_0p1C_0p33C_0p5C_1C.csv
+```
+
+### 결과 폴더 및 리포트 기록 규칙
+
+- fitting 실행 시 결과 폴더 앞에 KST 기준 `YYMMDD_hhmm_`가 자동으로 붙는다.
+- `parallel_config.json`에는 `fit_model`, Optuna 병렬 조건, branch별 sampling point 수, loss weight가 기록된다.
+- `피팅_결과_리포트.md` 생성일은 `YYYY-MM-DD HH:MM:SS KST`로 기록된다.
+- `dQ/dV(V) loss point 수` 표에는 각 C-rate별 sample 전체점, 충전점, 방전점, rest점, dQ/dV finite overlap point가 기록된다.
+
+---
+
+<!-- ============================================================ -->
 <!-- 업데이트: 2026-05-03  — 현재 상태 전체 재정리                -->
 <!-- ============================================================ -->
 
