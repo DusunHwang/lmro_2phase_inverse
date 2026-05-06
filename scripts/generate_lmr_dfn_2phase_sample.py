@@ -1,7 +1,7 @@
 """LMR 2상 DFN 가상 데이터 생성 스크립트.
 
 문헌 기반 LMR 파라미터를 사용하여 PyBaMM DFN 모델로 TOYO-형식 방전 데이터를 생성한다.
-생성된 데이터는 SPMe 역추정 스크립트(run_spme_2phase_fit.py)의 입력으로 사용된다.
+생성된 데이터는 LMR 2상 역추정 스크립트(run_lmr_2phase_fit.py)의 입력으로 사용된다.
 
 물리적 근거 (문헌 기반 LMR 파라미터):
   R3m  (고전압 층상구조, R̄3m):
@@ -13,7 +13,7 @@
 
 모델 vs 피팅:
   생성 (truth): PyBaMM DFN  — 전해액 농도 분포, 전극 내 전위 분포 포함
-  역추정 (fit): PyBaMM SPMe — 전해액 1차 근사, 단일 대표 입자
+  역추정 (fit): PyBaMM SPMe 또는 DFN
 
 사용법:
   .venv/bin/python scripts/generate_lmr_dfn_2phase_sample.py \\
@@ -318,7 +318,7 @@ def write_outputs(args, df, summaries, truth_dict, ocp_R3m, ocp_C2m):
 
     manifest = {
         "simulation_model":   "PyBaMM DFN (half-cell, working_electrode=positive)",
-        "fit_target_model":   "PyBaMM SPMe (half-cell)",
+        "fit_target_model":   "PyBaMM SPMe/DFN (half-cell)",
         "phase_mapping":      {"Primary": "R3m (고전압 층상)", "Secondary": "C2m (저전압 단사정계)"},
         "truth": truth_dict,
         "ocp": {
@@ -341,7 +341,7 @@ def write_outputs(args, df, summaries, truth_dict, ocp_R3m, ocp_C2m):
             "C2m D~10⁻¹⁴~10⁻¹⁵ cm²/s=10⁻¹⁸~10⁻¹⁹ m²/s; "
             "R3m OCP peak~3.7V, C2m OCP peak~3.2V (방전 기준)"
         ),
-        # run_spme_2phase_fit.py가 읽는 키
+        # run_lmr_2phase_fit.py가 읽는 키
         "target_peaks": {
             "R3m_primary_redox_feature_v":   args.r3m_center_v,
             "R3m_sigma_v":                   args.r3m_sigma_v,

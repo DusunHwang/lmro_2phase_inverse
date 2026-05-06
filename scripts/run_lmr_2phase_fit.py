@@ -1,17 +1,11 @@
-"""LMR 2상 SPMe 역추정 스크립트.
+"""LMR 2상 PyBaMM 역추정 스크립트.
 
-DFN으로 생성된 가상 측정 데이터를 입력받아 PyBaMM SPMe 모델로
+DFN으로 생성된 가상 측정 데이터를 입력받아 PyBaMM SPMe 또는 DFN 모델로
 frac, D, R, Gaussian OCP(center/sigma)를 추정한다.
 
-모델-형식 불일치(model-form mismatch):
+모델 형식:
   truth (data source) : DFN  — 전해액 농도 분포, 전극 내 전류 분포 포함
-  fit model           : SPMe — 전해액 1차 근사 (평균 전해액 농도 사용)
-
-이 불일치는 의도적이다:
-  실제 실험 데이터는 DFN 수준의 복잡한 물리를 포함하지만,
-  역추정에는 계산 비용이 저렴한 SPMe를 사용하는 것이 현실적이다.
-  SPMe는 SPM보다 전해액 저항/농도 효과를 1차 근사로 포함하여
-  고율(high C-rate)에서의 전압 강하를 더 정확히 모사한다.
+  fit model           : SPMe 또는 DFN (--fit-model)
 
 탐색 공간 (문헌 기반 LMR):
   R3m D: 10⁻¹⁸~10⁻¹⁵ m²/s  (문헌: 10⁻¹⁶~10⁻¹⁷)
@@ -20,10 +14,11 @@ frac, D, R, Gaussian OCP(center/sigma)를 추정한다.
   C2m OCP center: 2.60~3.30 V (문헌: 3.2~3.3V 방전 피크)
 
 사용법:
-  .venv/bin/python scripts/run_spme_2phase_fit.py \\
+  .venv/bin/python scripts/run_lmr_2phase_fit.py \\
       --data-csv  data/raw/toyo/lmr_dfn_2phase_sample/Toyo_LMR_DFN_2phase_*.csv \\
       --true-params data/raw/toyo/lmr_dfn_2phase_sample/true_lmr_dfn_parameters.json \\
-      --out-dir   data/fit_results/spme_2phase \\
+      --out-dir   data/fit_results/lmr_2phase \\
+      --fit-model SPMe \\
       [--cycles 1,2,3,4]  [--n-optuna 80]  [--n-scipy 500]
 """
 from __future__ import annotations
@@ -38,11 +33,14 @@ import sys
 import threading
 import time
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
+from scipy.signal import savgol_filter
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize
+import re
 
 _HERE = Path(__file__).resolve().parent
 _ROOT = _HERE.parent
@@ -88,8 +86,14 @@ UPPER = np.array([d[2] for d in PARAM_DEFS])
 NOM_CAP_AH    = 0.005
 C_S_0_FRAC    = 0.99
 N_GRID        = 512
+DQDV_N_GRID   = 256
+LOSS_W_VT     = 0.1
+LOSS_W_VQ     = 0.5
+LOSS_W_DQDV   = 5.0
+FIT_MODEL_TYPE = "SPMe"
+KST = timezone(timedelta(hours=9), name="KST")
 
-# SPMe 모델 옵션 (스레드 워커가 모델을 독립적으로 초기화할 때 사용)
+# PyBaMM fitting 모델 옵션 (스레드 워커가 모델을 독립적으로 초기화할 때 사용)
 SPME_OPTIONS = {
     "working electrode": "positive",
     "particle phases":   ("1", "2"),
@@ -97,6 +101,20 @@ SPME_OPTIONS = {
     "particle size":     "single",
     "surface form":      "differential",
 }
+
+
+def _timestamped_out_dir(path: str | Path) -> Path:
+    """결과 폴더명 앞에 실행 시점 YYMMDD_hhmm_ prefix를 붙인다."""
+    p = Path(path)
+    if re.match(r"^\d{6}_\d{4}_", p.name):
+        return p
+    return p.with_name(datetime.now(KST).strftime("%y%m%d_%H%M_") + p.name)
+
+
+def _build_fit_model():
+    if FIT_MODEL_TYPE == "DFN":
+        return pybamm.lithium_ion.DFN(SPME_OPTIONS)
+    return pybamm.lithium_ion.SPMe(SPME_OPTIONS)
 
 
 # ─── 실시간 모니터 ────────────────────────────────────────────────────────────
@@ -119,9 +137,11 @@ class Monitor:
 
     def _print_header(self):
         sep = "=" * 76
+        fit_name = "DFN" if "PyBaMM DFN" in self.model_desc else "SPMe"
         print(sep)
         print(f"  피팅 모델  : {self.model_desc}")
-        print(f"  데이터 원천: DFN (truth)  →  SPMe (fit model)  [model-form mismatch]")
+        mismatch = "" if fit_name == "DFN" else "  [model-form mismatch]"
+        print(f"  데이터 원천: DFN (truth)  →  {fit_name} (fit model){mismatch}")
         print(f"  데이터     : {self.data_desc}")
         print()
         print(f"  탐색 공간 (문헌 기반 LMR):")
@@ -204,22 +224,22 @@ class Monitor:
 
 # ─── 병렬 워커 ──────────────────────────────────────────────────────────────────
 
-# ── Optuna 스레드 병렬: 각 스레드가 독립 SPMe 모델을 보유 ──
+# ── Optuna 스레드 병렬: 각 스레드가 독립 fitting 모델을 보유 ──
 _thread_local = threading.local()
 _hist_lock    = threading.Lock()   # fit_history.jsonl 동시 쓰기 보호
 
 
 def _get_thread_model_gen():
-    """스레드-로컬 SPMe 모델과 gen 모듈 반환 (스레드당 1회만 초기화)."""
-    if not hasattr(_thread_local, "spme_model"):
-        import pybamm as _pybamm
-        _thread_local.spme_model = _pybamm.lithium_ion.SPMe(SPME_OPTIONS)
+    """스레드-로컬 fitting 모델과 gen 모듈 반환 (스레드당 1회만 초기화)."""
+    attr = f"{FIT_MODEL_TYPE.lower()}_model"
+    if not hasattr(_thread_local, attr):
+        setattr(_thread_local, attr, _build_fit_model())
         _thread_local.gen        = _load_gen()
-    return _thread_local.spme_model, _thread_local.gen
+    return getattr(_thread_local, attr), _thread_local.gen
 
 
 # ── scipy 사이클 프로세스 풀 (fork): CasADi 컴파일 함수 상속 ──
-_w_model = None   # 워커 프로세스에서 사용할 SPMe 모델 (fork 전 부모에서 설정)
+_w_model = None   # 워커 프로세스에서 사용할 fitting 모델 (fork 전 부모에서 설정)
 _w_gen   = None   # 워커 프로세스에서 사용할 gen 모듈
 _POOL: "concurrent.futures.ProcessPoolExecutor | None" = None
 
@@ -232,7 +252,16 @@ def _cycle_worker(payload: tuple) -> float:
     return _cycle_loss(_w_model, pv, time_s, current_a, voltage_ref)
 
 
-def _init_pool(n_jobs: int, spme_model, gen) -> None:
+def _thread_cycle_worker(payload: tuple) -> float:
+    """Optuna trial 내부 C-rate 병렬용 스레드 태스크."""
+    v_clip, time_s, current_a, voltage_ref = payload
+    t_model, t_gen = _get_thread_model_gen()
+    phys, d = _vec_to_phys(v_clip)
+    pv = _build_pybamm_params(t_gen, phys, d)
+    return _cycle_loss(t_model, pv, time_s, current_a, voltage_ref)
+
+
+def _init_pool(n_jobs: int, fit_model, gen) -> None:
     """fork 기반 프로세스 풀을 초기화한다.
 
     첫 PyBaMM solve 전에 fork해야 CasADi JIT 컴파일 함수를
@@ -241,7 +270,7 @@ def _init_pool(n_jobs: int, spme_model, gen) -> None:
     global _w_model, _w_gen, _POOL
     if n_jobs <= 1:
         return
-    _w_model = spme_model
+    _w_model = fit_model
     _w_gen   = gen
     ctx  = multiprocessing.get_context("fork")
     _POOL = concurrent.futures.ProcessPoolExecutor(
@@ -309,13 +338,129 @@ def _norm_vq_grid(t, v, i, n=N_GRID) -> np.ndarray:
     return fn(np.linspace(0.0, 1.0, n))
 
 
-def _cycle_loss(spme_model, pv,
+def _branch_dqdv_grid(
+    t, v, i, branch: str, n=DQDV_N_GRID
+) -> tuple[np.ndarray, np.ndarray]:
+    """충전/방전 branch dQ/dV(V)를 공통 전압 grid로 반환한다.
+
+    charge는 양수, discharge는 음수 dQ/dV로 반환한다.
+    grid 밖 영역은 NaN으로 두어 overlap 구간만 loss에 사용한다.
+    """
+    if branch == "charge":
+        mask = i > 1e-5
+        sign = 1.0
+    elif branch == "discharge":
+        mask = i < -1e-5
+        sign = -1.0
+    else:
+        raise ValueError(f"unknown branch: {branch}")
+    min_pts = 5
+    if int(mask.sum()) < min_pts:
+        return np.linspace(2.5, 4.65, n), np.full(n, np.nan)
+
+    t_b = np.asarray(t[mask], dtype=float)
+    v_b = np.asarray(v[mask], dtype=float)
+    i_b = np.asarray(i[mask], dtype=float)
+    q_b = np.cumsum(np.abs(i_b) * np.gradient(t_b) / 3600.0) * 1000.0
+    if not np.isfinite(q_b[-1]) or q_b[-1] < 1e-6:
+        return np.linspace(2.5, 4.65, n), np.full(n, np.nan)
+
+    order = np.argsort(v_b)
+    v_s = v_b[order]
+    q_s = q_b[order]
+    uniq_v, uniq_idx = np.unique(v_s, return_index=True)
+    uniq_q = q_s[uniq_idx]
+    if len(uniq_v) < min_pts or uniq_v[-1] - uniq_v[0] < 0.05:
+        return np.linspace(2.5, 4.65, n), np.full(n, np.nan)
+
+    v_grid = np.linspace(2.5, 4.65, n)
+    q_grid = interp1d(
+        uniq_v, uniq_q, bounds_error=False, fill_value=np.nan
+    )(v_grid)
+    ok = np.isfinite(q_grid)
+    if int(ok.sum()) < min_pts:
+        return v_grid, np.full(n, np.nan)
+
+    q_valid = q_grid[ok]
+    win = min(19, max(5, (len(q_valid) // 3) * 2 - 1))
+    if len(q_valid) >= 7 and win >= 5 and win > 3:
+        q_grid[ok] = savgol_filter(q_valid, win, 3 if win > 3 else 2)
+
+    dqdv = np.full(n, np.nan)
+    dqdv[ok] = sign * np.gradient(q_grid[ok], v_grid[ok])
+    return v_grid, dqdv
+
+
+def _discharge_dqdv_grid(t, v, i, n=DQDV_N_GRID) -> tuple[np.ndarray, np.ndarray]:
+    """Backward-compatible discharge-only dQ/dV helper."""
+    return _branch_dqdv_grid(t, v, i, "discharge", n=n)
+
+
+def _dqdv_loss(t_sim, v_sim, i_sim, t_ref, v_ref, i_ref) -> float:
+    losses = []
+    for branch in ("charge", "discharge"):
+        _vg_ref, dqdv_ref = _branch_dqdv_grid(t_ref, v_ref, i_ref, branch)
+        _vg_sim, dqdv_sim = _branch_dqdv_grid(t_sim, v_sim, i_sim, branch)
+        ok = np.isfinite(dqdv_ref) & np.isfinite(dqdv_sim)
+        if int(ok.sum()) < 5:
+            losses.append(1e6)
+            continue
+        scale = float(np.mean(dqdv_ref[ok] ** 2))
+        if not np.isfinite(scale) or scale < 1e-12:
+            losses.append(1e6)
+            continue
+        losses.append(float(np.mean((dqdv_sim[ok] - dqdv_ref[ok]) ** 2) / scale))
+    return float(np.mean(losses)) if losses else 1e6
+
+
+def _branch_balanced_indices(time_s, current_a, points_per_branch: int) -> np.ndarray:
+    """충전/방전 branch별로 균등 point를 확보하고 rest 경계점을 보존한다."""
+    n = len(time_s)
+    keep: set[int] = {0, n - 1}
+    for mask in (current_a > 1e-5, current_a < -1e-5):
+        idx = np.flatnonzero(mask)
+        if len(idx) == 0:
+            continue
+        take = min(points_per_branch, len(idx))
+        sel = np.linspace(0, len(idx) - 1, take).round().astype(int)
+        keep.update(idx[sel].tolist())
+
+    rest_idx = np.flatnonzero(np.abs(current_a) <= 1e-5)
+    if len(rest_idx):
+        keep.update(rest_idx[np.linspace(0, len(rest_idx) - 1, min(12, len(rest_idx))).round().astype(int)].tolist())
+
+    # current sign transition 주변점을 보존해 Experiment branch 경계가 흐려지지 않게 한다.
+    sign = np.sign(current_a)
+    edges = np.flatnonzero(np.diff(sign) != 0)
+    for e in edges:
+        for j in range(max(0, e - 1), min(n, e + 3)):
+            keep.add(j)
+    return np.array(sorted(keep), dtype=int)
+
+
+def _dqdv_point_summary(t_s, v_v, i_a, cycle_id: int, c_rate: float | None) -> dict:
+    summary = {
+        "cycle": int(cycle_id),
+        "c_rate": c_rate,
+        "raw_sample_points": int(len(t_s)),
+        "charge_points": int((i_a > 1e-5).sum()),
+        "discharge_points": int((i_a < -1e-5).sum()),
+        "rest_points": int((np.abs(i_a) <= 1e-5).sum()),
+        "dqdv_grid_points": int(DQDV_N_GRID),
+    }
+    for branch in ("charge", "discharge"):
+        _vg, dqdv = _branch_dqdv_grid(t_s, v_v, i_a, branch)
+        summary[f"{branch}_finite_dqdv_points"] = int(np.isfinite(dqdv).sum())
+    return summary
+
+
+def _cycle_loss(fit_model, pv,
                 time_s: np.ndarray,
                 current_a: np.ndarray,
                 voltage_ref: np.ndarray) -> float:
     from lmro2phase.physics.simulator import run_current_drive
     t_rel  = time_s - time_s[0]
-    result = run_current_drive(spme_model, pv, time_s, current_a, t_eval=t_rel)
+    result = run_current_drive(fit_model, pv, time_s, current_a, t_eval=t_rel)
     if not result.ok:
         return 1e8
 
@@ -328,17 +473,22 @@ def _cycle_loss(spme_model, pv,
     ok = ~(np.isnan(vg_sim) | np.isnan(vg_ref))
     loss_vq = float(np.mean((vg_sim[ok] - vg_ref[ok]) ** 2)) if ok.any() else 1e6
 
-    return 0.3 * loss_vt + 1.0 * loss_vq
+    loss_dqdv = _dqdv_loss(
+        result.time_s, result.voltage_v, result.current_a,
+        t_rel, voltage_ref, current_a,
+    )
+
+    return LOSS_W_VT * loss_vt + LOSS_W_VQ * loss_vq + LOSS_W_DQDV * loss_dqdv
 
 
 def compute_loss(v_vec: np.ndarray,
-                  gen, spme_model,
+                  gen, fit_model,
                   cycles_data: list[tuple],
                   use_pool: bool = True) -> float:
     """멀티 C-rate 동시 loss (사이클 평균).
 
     use_pool=True  이고 _POOL 이 초기화된 경우 각 사이클을 별도 프로세스에서 병렬 실행한다.
-    use_pool=False (Optuna 스레드 경로): 전달된 gen/spme_model 로 순차 실행한다.
+    use_pool=False (Optuna 스레드 경로): 전달된 gen/fit_model 로 순차 실행한다.
     """
     v_clip = np.clip(v_vec, LOWER, UPPER)
 
@@ -354,20 +504,44 @@ def compute_loss(v_vec: np.ndarray,
             pv = _build_pybamm_params(gen, phys, d)
         except Exception:
             return 1e9
-        losses = [_cycle_loss(spme_model, pv, t, i, v) for t, i, v in cycles_data]
+        losses = [_cycle_loss(fit_model, pv, t, i, v) for t, i, v in cycles_data]
 
+    return sum(losses) / max(len(losses), 1)
+
+
+def compute_loss_threaded_cycles(v_vec: np.ndarray,
+                                 cycles_data: list[tuple],
+                                 cycle_workers: int) -> float:
+    """Optuna trial 내부에서 C-rate별 loss를 스레드로 병렬 계산한다.
+
+    Optuna 자체가 스레드 병렬로 trial을 돌리므로, 여기서는 프로세스 풀을
+    공유하지 않고 각 사이클 스레드가 독립 fitting 모델을 보유하도록 한다.
+    """
+    v_clip = np.clip(v_vec, LOWER, UPPER)
+    if cycle_workers <= 1 or len(cycles_data) <= 1:
+        t_model, t_gen = _get_thread_model_gen()
+        return compute_loss(v_clip, t_gen, t_model, cycles_data, use_pool=False)
+
+    try:
+        payloads = [(v_clip, t, i, v) for t, i, v in cycles_data]
+        workers = min(int(cycle_workers), len(payloads))
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
+            losses = list(ex.map(_thread_cycle_worker, payloads))
+    except Exception:
+        return 1e8
     return sum(losses) / max(len(losses), 1)
 
 
 # ─── Optuna 탐색 ──────────────────────────────────────────────────────────────
 
-def run_optuna(gen, spme_model, cycles_data, monitor, n_trials, seed, out_dir,
-               n_jobs: int = 1) -> np.ndarray:
+def run_optuna(gen, fit_model, cycles_data, monitor, n_trials, seed, out_dir,
+               n_jobs: int = 1, cycle_workers: int = 1) -> np.ndarray:
     """Optuna 탐색.
 
     n_jobs > 1: 각 trial을 별도 스레드에서 실행 (joblib prefer='threads').
+    cycle_workers > 1: 각 trial 내부의 C-rate 사이클도 스레드 병렬 실행.
     CasADi/SUNDIALS 는 GIL을 해제하므로 실제 병렬 연산이 이뤄진다.
-    각 스레드는 _get_thread_model_gen() 을 통해 독립 SPMe 모델을 보유한다.
+    각 계산 스레드는 _get_thread_model_gen() 을 통해 독립 fitting 모델을 보유한다.
     """
     import optuna
     optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -377,15 +551,16 @@ def run_optuna(gen, spme_model, cycles_data, monitor, n_trials, seed, out_dir,
     monitor.set_phase(phase_label)
     if n_jobs > 1:
         print(f"  Optuna 스레드 병렬: {n_jobs} workers  (TPE batch mode)", flush=True)
+    if cycle_workers > 1:
+        print(f"  Optuna trial 내부 C-rate 병렬: {cycle_workers} workers", flush=True)
 
     def objective(trial):
         v = np.array([trial.suggest_float(k, lo, hi) for k, lo, hi, _ in PARAM_DEFS])
-        # n_jobs>1 이면 스레드-로컬 모델 사용, 아니면 전달된 모델 사용
-        if n_jobs > 1:
-            t_model, t_gen = _get_thread_model_gen()
-            loss = compute_loss(v, t_gen, t_model, cycles_data, use_pool=False)
+        # Optuna 병렬 경로에서는 전역 프로세스 풀 대신 스레드-로컬 모델을 사용한다.
+        if n_jobs > 1 or cycle_workers > 1:
+            loss = compute_loss_threaded_cycles(v, cycles_data, cycle_workers)
         else:
-            loss = compute_loss(v, gen, spme_model, cycles_data)
+            loss = compute_loss(v, gen, fit_model, cycles_data)
         params = {k: float(v[i]) for i, k in enumerate(PARAM_KEYS)}
         monitor.update(loss, params)
         with _hist_lock, open(hist, "a") as f:
@@ -403,14 +578,18 @@ def run_optuna(gen, spme_model, cycles_data, monitor, n_trials, seed, out_dir,
 
 # ─── scipy 정제 ───────────────────────────────────────────────────────────────
 
-def run_scipy(init_v, gen, spme_model, cycles_data, monitor, max_fun, out_dir) -> np.ndarray:
+def run_scipy(init_v, gen, fit_model, cycles_data, monitor, max_fun, out_dir) -> np.ndarray:
+    if max_fun <= 0:
+        monitor.set_phase("scipy skipped")
+        return np.array([monitor.best_params.get(k, init_v[i]) for i, k in enumerate(PARAM_KEYS)])
+
     hist = out_dir / "fit_history.jsonl"
     monitor.set_phase("scipy L-BFGS-B")
     n_eval = [0]
 
     def obj(x):
         xc = np.clip(x, LOWER, UPPER)
-        loss = compute_loss(xc, gen, spme_model, cycles_data)
+        loss = compute_loss(xc, gen, fit_model, cycles_data)
         n_eval[0] += 1
         params = {k: float(xc[i]) for i, k in enumerate(PARAM_KEYS)}
         if loss < monitor.best_loss or n_eval[0] % 20 == 0:
@@ -427,7 +606,8 @@ def run_scipy(init_v, gen, spme_model, cycles_data, monitor, max_fun, out_dir) -
         bounds=list(zip(LOWER, UPPER)),
         options={"maxfun": max_fun, "ftol": 1e-12, "gtol": 1e-8},
     )
-    return np.clip(res.x, LOWER, UPPER)
+    best_seen = np.array([monitor.best_params.get(k, res.x[i]) for i, k in enumerate(PARAM_KEYS)])
+    return np.clip(best_seen, LOWER, UPPER)
 
 
 # ─── 결과 저장 ────────────────────────────────────────────────────────────────
@@ -477,8 +657,12 @@ def save_results(best_v, monitor, true_json, out_dir):
 
     comp = {
         "truth_model": "PyBaMM DFN (half-cell, 2-phase positive)",
-        "fit_model":   "PyBaMM SPMe (half-cell, 2-phase positive)",
-        "note":        "model-form mismatch: DFN truth → SPMe fit",
+        "fit_model":   f"PyBaMM {FIT_MODEL_TYPE} (half-cell, 2-phase positive)",
+        "note":        (
+            "same-form fit: DFN truth -> DFN fit"
+            if FIT_MODEL_TYPE == "DFN"
+            else "model-form mismatch: DFN truth -> SPMe fit"
+        ),
         "final_loss":  monitor.best_loss,
         "estimated":   result,
         "true":        true_d,
@@ -497,9 +681,34 @@ def save_results(best_v, monitor, true_json, out_dir):
 # ─── 메인 ────────────────────────────────────────────────────────────────────
 
 def main(args):
-    out_dir = Path(args.out_dir)
+    global LOSS_W_VT, LOSS_W_VQ, LOSS_W_DQDV, FIT_MODEL_TYPE
+    LOSS_W_VT = float(args.loss_w_vt)
+    LOSS_W_VQ = float(args.loss_w_vq)
+    LOSS_W_DQDV = float(args.loss_w_dqdv)
+    FIT_MODEL_TYPE = str(args.fit_model)
+
+    out_dir = _timestamped_out_dir(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "fit_history.jsonl").write_text("")
+    optuna_cycle_workers = max(1, int(args.optuna_cycle_workers))
+    parallel_config = {
+        "optuna_trial_workers": int(args.n_jobs),
+        "optuna_cycle_workers_per_trial": optuna_cycle_workers,
+        "scipy_cycle_workers": int(args.n_cycle_workers),
+        "cycles": str(args.cycles),
+        "subsample": int(args.subsample),
+        "branch_points_per_charge_discharge": int(args.branch_points),
+        "n_optuna": int(args.n_optuna),
+        "n_scipy": int(args.n_scipy),
+        "fit_model": FIT_MODEL_TYPE,
+        "loss_weights": {
+            "Vt_MSE": LOSS_W_VT,
+            "VQ_MSE": LOSS_W_VQ,
+            "dQdV_MSE_normalized": LOSS_W_DQDV,
+        },
+        "note": "Optuna는 trial 병렬과 trial 내부 C-rate 병렬을 모두 사용한다.",
+    }
+    (out_dir / "parallel_config.json").write_text(json.dumps(parallel_config, indent=2))
 
     gen = _load_gen()
 
@@ -509,16 +718,30 @@ def main(args):
     profile = parse_toyo(args.data_csv)
 
     cycles_data, cycle_descs = [], []
+    default_c_rates = [0.1, 0.33, 0.5, 1.0]
+    dqdv_profile_points = []
     for cid in cycle_ids:
         cyc = profile.select_cycle(cid)
-        idx = np.arange(0, len(cyc), args.subsample)
+        if args.branch_points > 0:
+            idx = _branch_balanced_indices(cyc.time_s, cyc.current_a, args.branch_points)
+        else:
+            idx = np.arange(0, len(cyc), args.subsample)
         t_s, i_a, v_v = cyc.time_s[idx], cyc.current_a[idx], cyc.voltage_v[idx]
         cycles_data.append((t_s, i_a, v_v))
-        cycle_descs.append(f"cycle{cid}(n={len(t_s)}, span={t_s[-1]/3600:.1f}h)")
+        cycle_descs.append(
+            f"cycle{cid}(n={len(t_s)}, chg={(i_a > 1e-5).sum()}, "
+            f"dchg={(i_a < -1e-5).sum()}, span={t_s[-1]/3600:.1f}h)"
+        )
+        dqdv_profile_points.append(_dqdv_point_summary(
+            t_s, v_v, i_a, cid,
+            default_c_rates[cid - 1] if 1 <= cid <= len(default_c_rates) else None,
+        ))
+    parallel_config["dqdv_profile_points"] = dqdv_profile_points
+    (out_dir / "parallel_config.json").write_text(json.dumps(parallel_config, indent=2))
 
     data_desc = (
         f"{Path(args.data_csv).parent.name}  "
-        f"cycles={cycle_ids}  sub=1/{args.subsample}  "
+        f"cycles={cycle_ids}  branch_points={args.branch_points}  sub=1/{args.subsample}  "
         + "  ".join(cycle_descs)
     )
 
@@ -541,27 +764,30 @@ def main(args):
         }
 
     model_desc = (
-        "PyBaMM SPMe  |  particle phases: ('1','2')  |  "
+        f"PyBaMM {FIT_MODEL_TYPE}  |  particle phases: ('1','2')  |  "
         "Primary=R3m (고전압), Secondary=C2m (저전압)  |  "
         "Gaussian dQ/dV OCP"
     )
     monitor = Monitor(model_desc, data_desc, args.n_optuna, args.n_scipy, true_params)
 
-    print("  PyBaMM SPMe 2상 모델 초기화...", flush=True)
-    spme_model = pybamm.lithium_ion.SPMe(SPME_OPTIONS)
+    print(f"  PyBaMM {FIT_MODEL_TYPE} 2상 모델 초기화...", flush=True)
+    fit_model = _build_fit_model()
     print("  모델 초기화 완료.")
 
     # scipy 단계용 사이클 병렬 풀 초기화 (첫 solve 전 fork)
-    _init_pool(args.n_cycle_workers, spme_model, gen)
+    _init_pool(args.n_cycle_workers, fit_model, gen)
     print()
 
     try:
-        best_optuna = run_optuna(gen, spme_model, cycles_data,
+        best_optuna = run_optuna(gen, fit_model, cycles_data,
                                   monitor, args.n_optuna, args.seed, out_dir,
-                                  n_jobs=args.n_jobs)
-        best_final  = run_scipy(best_optuna, gen, spme_model, cycles_data,
+                                  n_jobs=args.n_jobs,
+                                  cycle_workers=optuna_cycle_workers)
+        best_final  = run_scipy(best_optuna, gen, fit_model, cycles_data,
                                  monitor, args.n_scipy, out_dir)
         save_results(best_final, monitor, args.true_params, out_dir)
+        parallel_config["elapsed_seconds"] = round(time.time() - monitor.t_start, 3)
+        (out_dir / "parallel_config.json").write_text(json.dumps(parallel_config, indent=2))
     finally:
         if _POOL is not None:
             _POOL.shutdown(wait=False)
@@ -576,7 +802,7 @@ import pybamm  # noqa: E402  (generate 스크립트와 동일 환경 보장)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="LMR 2상 SPMe 역추정 (DFN truth → SPMe fit)",
+        description="LMR 2상 PyBaMM 역추정 (DFN truth → SPMe/DFN fit)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
@@ -587,10 +813,16 @@ if __name__ == "__main__":
         "--true-params",
         default="data/raw/toyo/lmr_dfn_2phase_sample/true_lmr_dfn_parameters.json",
     )
-    parser.add_argument("--out-dir",   default="data/fit_results/spme_2phase")
+    parser.add_argument("--out-dir",   default="data/fit_results/lmr_2phase")
+    parser.add_argument("--fit-model", default="SPMe", choices=["SPMe", "DFN"],
+                        help="역추정에 사용할 PyBaMM 모델")
     parser.add_argument("--cycles",    default="1,2,3,4",
                         help="피팅 사이클 (쉼표 구분)")
     parser.add_argument("--subsample", type=int, default=600)
+    parser.add_argument(
+        "--branch-points", type=int, default=200,
+        help="각 cycle의 충전/방전 branch별 목표 샘플 수. 0이면 기존 균일 subsample 사용",
+    )
     parser.add_argument("--n-optuna",  type=int, default=80)
     parser.add_argument("--n-scipy",   type=int, default=500)
     parser.add_argument("--seed",      type=int, default=42)
@@ -602,5 +834,15 @@ if __name__ == "__main__":
         "--n-cycle-workers", type=int, default=4,
         help="scipy 단계 사이클 병렬 프로세스 수. 1=순차, 4=기본",
     )
+    parser.add_argument(
+        "--optuna-cycle-workers", type=int, default=4,
+        help="Optuna 각 trial 내부의 C-rate 병렬 스레드 수. 1=trial 내부 순차, 4=4개 C-rate 동시",
+    )
+    parser.add_argument("--loss-w-vt", type=float, default=LOSS_W_VT,
+                        help="V(t) MSE loss 가중치")
+    parser.add_argument("--loss-w-vq", type=float, default=LOSS_W_VQ,
+                        help="V(Q) MSE loss 가중치")
+    parser.add_argument("--loss-w-dqdv", type=float, default=LOSS_W_DQDV,
+                        help="normalized dQ/dV(V) MSE loss 가중치")
     args = parser.parse_args()
     main(args)

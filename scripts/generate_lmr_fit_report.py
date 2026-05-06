@@ -1,11 +1,11 @@
-"""LMR SPMe 2상 역추정 결과 리포트 생성기.
+"""LMR 2상 역추정 결과 리포트 생성기.
 
-DFN 진실값 vs SPMe 피팅 결과를 C-rate별 V(Q) / dQ/dV 비교,
+DFN 진실값 vs PyBaMM fitting 결과를 C-rate별 V(Q) / dQ/dV 비교,
 수렴 과정 단계별 dQ/dV 진화, Loss 이력을 포함한 마크다운 리포트로 출력한다.
 
 사용법:
-  .venv/bin/python scripts/generate_spme_fit_report.py \\
-      --fit-dir  data/fit_results/spme_2phase \\
+  .venv/bin/python scripts/generate_lmr_fit_report.py \\
+      --fit-dir  data/fit_results/lmr_2phase \\
       --data-csv data/raw/toyo/lmr_dfn_2phase_sample/Toyo_LMR_DFN_2phase_0p1C_0p33C_0p5C_1C.csv \\
       --subsample-plot 200
 """
@@ -16,6 +16,7 @@ import importlib.util
 import json
 import sys
 import time
+from datetime import timedelta, timezone
 from pathlib import Path
 
 import numpy as np
@@ -34,6 +35,8 @@ sys.path.insert(0, str(ROOT / "scripts"))
 C_RATES    = [0.1, 0.33, 0.5, 1.0]
 COLORS     = ["#1a1a2e", "#e94560", "#0f3460", "#16213e"]   # truth(dark) / steps 1-3
 STEP_COLS  = ["#9b59b6", "#e67e22", "#27ae60", "#e74c3c"]   # milestone colors
+REPORT_FIT_MODEL = "SPMe"
+KST = timezone(timedelta(hours=9), name="KST")
 
 
 # ─── 유틸리티 ─────────────────────────────────────────────────────────────────
@@ -48,15 +51,18 @@ def _load_gen():
     return mod
 
 
-def _build_spme_model():
+def _build_fit_model(fit_model: str = "SPMe"):
     import pybamm
-    return pybamm.lithium_ion.SPMe({
+    options = {
         "working electrode": "positive",
         "particle phases":   ("1", "2"),
         "particle":          "Fickian diffusion",
         "particle size":     "single",
         "surface form":      "differential",
-    })
+    }
+    if fit_model == "DFN":
+        return pybamm.lithium_ion.DFN(options)
+    return pybamm.lithium_ion.SPMe(options)
 
 
 def _params_from_dict(gen, d: dict):
@@ -84,14 +90,14 @@ def _params_from_dict(gen, d: dict):
     return pv
 
 
-def _run_cycle(spme_model, pv, t_s, i_a, subsample=200):
-    """SPMe 시뮬레이션 실행 → (time, voltage, current) 전체 사이클."""
+def _run_cycle(fit_model, pv, t_s, i_a, subsample=200):
+    """Fitting 모델 시뮬레이션 실행 → (time, voltage, current) 전체 사이클."""
     from lmro2phase.physics.simulator import run_current_drive
     idx   = np.arange(0, len(t_s), subsample)
     t_sub = t_s[idx]; i_sub = i_a[idx]
     t_rel = t_sub - t_sub[0]
     # t_eval은 반드시 current interpolant의 모든 노드를 포함해야 함
-    res   = run_current_drive(spme_model, pv, t_sub, i_sub, t_eval=t_rel)
+    res   = run_current_drive(fit_model, pv, t_sub, i_sub, t_eval=t_rel)
     if not res.ok:
         return None
     return res.time_s, res.voltage_v, res.current_a
@@ -173,18 +179,18 @@ def _select_milestones(hist_path: Path) -> list[dict]:
 
 # ─── 그림 생성 ────────────────────────────────────────────────────────────────
 
-def fig_vq_comparison(dfn_cycles, spme_cycles, fig_dir: Path) -> Path:
+def fig_vq_comparison(dfn_cycles, fit_cycles, fig_dir: Path) -> Path:
     """Fig 1: C-rate V(Q) comparison (2x2)."""
     fig, axes = plt.subplots(2, 2, figsize=(11, 8))
-    fig.suptitle("V(Q) Profile: DFN truth vs SPMe fit", fontsize=13, fontweight="bold")
-    for ax, (crate, dfn_res, spme_res) in zip(axes.flat, zip(C_RATES, dfn_cycles, spme_cycles)):
+    fig.suptitle(f"V(Q) Profile: DFN truth vs {REPORT_FIT_MODEL} fit", fontsize=13, fontweight="bold")
+    for ax, (crate, dfn_res, fit_res) in zip(axes.flat, zip(C_RATES, dfn_cycles, fit_cycles)):
         q_d, v_d = _discharge_vq(*dfn_res)
         if q_d is not None:
             ax.plot(q_d, v_d, "k-", lw=2.0, label="DFN (truth)")
-        if spme_res is not None:
-            q_s, v_s = _discharge_vq(*spme_res)
+        if fit_res is not None:
+            q_s, v_s = _discharge_vq(*fit_res)
             if q_s is not None:
-                ax.plot(q_s, v_s, "--", color="#e94560", lw=1.8, label="SPMe (fit)")
+                ax.plot(q_s, v_s, "--", color="#e94560", lw=1.8, label=f"{REPORT_FIT_MODEL} (fit)")
         ax.set_title(f"{crate}C", fontsize=11)
         ax.set_xlabel("Normalized capacity [-]")
         ax.set_ylabel("Voltage [V]")
@@ -198,18 +204,18 @@ def fig_vq_comparison(dfn_cycles, spme_cycles, fig_dir: Path) -> Path:
     return out
 
 
-def fig_dqdv_comparison(dfn_cycles, spme_cycles, fig_dir: Path) -> Path:
+def fig_dqdv_comparison(dfn_cycles, fit_cycles, fig_dir: Path) -> Path:
     """Fig 2: C-rate dQ/dV comparison (2x2)."""
     fig, axes = plt.subplots(2, 2, figsize=(11, 8))
-    fig.suptitle("dQ/dV Profile: DFN truth vs SPMe fit", fontsize=13, fontweight="bold")
-    for ax, (crate, dfn_res, spme_res) in zip(axes.flat, zip(C_RATES, dfn_cycles, spme_cycles)):
+    fig.suptitle(f"dQ/dV Profile: DFN truth vs {REPORT_FIT_MODEL} fit", fontsize=13, fontweight="bold")
+    for ax, (crate, dfn_res, fit_res) in zip(axes.flat, zip(C_RATES, dfn_cycles, fit_cycles)):
         v_d, dqd = _discharge_dqdv(*dfn_res)
         if v_d is not None:
             ax.plot(v_d, dqd, "k-", lw=2.0, label="DFN (truth)")
-        if spme_res is not None:
-            v_s, dqs = _discharge_dqdv(*spme_res)
+        if fit_res is not None:
+            v_s, dqs = _discharge_dqdv(*fit_res)
             if v_s is not None:
-                ax.plot(v_s, dqs, "--", color="#e94560", lw=1.8, label="SPMe (fit)")
+                ax.plot(v_s, dqs, "--", color="#e94560", lw=1.8, label=f"{REPORT_FIT_MODEL} (fit)")
         ax.set_title(f"{crate}C", fontsize=11)
         ax.set_xlabel("Voltage [V]")
         ax.set_ylabel("-dQ/dV [mAh/V]")
@@ -229,7 +235,7 @@ def fig_convergence_dqdv(dfn_cycle1, milestone_results, milestones, fig_dir: Pat
     fig, axes = plt.subplots(1, n, figsize=(4 * n, 4.5), sharey=True)
     if n == 1:
         axes = [axes]
-    fig.suptitle("dQ/dV Convergence at 0.1C  —  DFN truth vs SPMe step-by-step approximation",
+    fig.suptitle(f"dQ/dV Convergence at 0.1C  —  DFN truth vs {REPORT_FIT_MODEL} step-by-step approximation",
                  fontsize=11, fontweight="bold")
 
     v_d, dqd = _discharge_dqdv(*dfn_cycle1)
@@ -246,7 +252,7 @@ def fig_convergence_dqdv(dfn_cycle1, milestone_results, milestones, fig_dir: Pat
             v_s, dqs = _discharge_dqdv(*res)
             if v_s is not None:
                 ax.plot(v_s, dqs, "-", color=col, lw=1.8,
-                        label=f"SPMe approx.\nloss={ms['loss']:.4f}")
+                        label=f"{REPORT_FIT_MODEL} approx.\nloss={ms['loss']:.4f}")
         # Annotate milestone type
         step_type = "Optuna" if ms["type"] == "optuna" else "scipy"
         ax.set_title(f"Step {i}  [{step_type}]\nloss = {ms['loss']:.4f}", fontsize=9)
@@ -321,7 +327,7 @@ def fig_loss_history(hist_path: Path, fig_dir: Path) -> Path:
 def fig_ocp_comparison(gen, true_json: dict, best_params: dict, fig_dir: Path) -> Path:
     """Fig 5: OCP curves and dQ/dV distribution comparison."""
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-    fig.suptitle("OCP Comparison: DFN truth vs SPMe fit", fontsize=13, fontweight="bold")
+    fig.suptitle(f"OCP Comparison: DFN truth vs {REPORT_FIT_MODEL} fit", fontsize=13, fontweight="bold")
 
     sto    = np.linspace(0.02, 0.98, 800)
     v_axis = np.linspace(2.5, 4.65, 800)
@@ -384,22 +390,22 @@ def fig_ocp_comparison(gen, true_json: dict, best_params: dict, fig_dir: Path) -
     return out
 
 
-def fig_dqdv_crate_overlay(dfn_cycles, spme_cycles, fig_dir: Path) -> Path:
+def fig_dqdv_crate_overlay(dfn_cycles, fit_cycles, fig_dir: Path) -> Path:
     """Fig 6: dQ/dV overlay for all C-rates."""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
     fig.suptitle("dQ/dV at All C-rates", fontsize=13, fontweight="bold")
 
     crate_colors = ["#2c3e50", "#8e44ad", "#16a085", "#c0392b"]
-    for crate, dfn_res, spme_res, col in zip(C_RATES, dfn_cycles, spme_cycles, crate_colors):
+    for crate, dfn_res, fit_res, col in zip(C_RATES, dfn_cycles, fit_cycles, crate_colors):
         v_d, dqd = _discharge_dqdv(*dfn_res)
         if v_d is not None:
             ax1.plot(v_d, dqd, "-", color=col, lw=1.8, label=f"{crate}C")
-        if spme_res is not None:
-            v_s, dqs = _discharge_dqdv(*spme_res)
+        if fit_res is not None:
+            v_s, dqs = _discharge_dqdv(*fit_res)
             if v_s is not None:
                 ax2.plot(v_s, dqs, "-", color=col, lw=1.8, label=f"{crate}C")
 
-    for ax, title in [(ax1, "DFN truth"), (ax2, "SPMe fit")]:
+    for ax, title in [(ax1, "DFN truth"), (ax2, f"{REPORT_FIT_MODEL} fit")]:
         ax.set_xlabel("Voltage [V]")
         ax.set_ylabel("-dQ/dV [mAh/V]")
         ax.set_title(title, fontsize=11)
@@ -432,7 +438,7 @@ def _param_table_md(best: dict, true_j: dict) -> str:
         "C2m_sigma_v":   tp.get("C2m_sigma_v"),
     }
     rows = [
-        "| 파라미터 | 진실값 (DFN) | 추정값 (SPMe) | 오차 | 비고 |",
+        f"| 파라미터 | 진실값 (DFN) | 추정값 ({REPORT_FIT_MODEL}) | 오차 | 비고 |",
         "|:---|---:|---:|---:|:---|",
     ]
     descs = {
@@ -480,14 +486,47 @@ def _dr2_table_md(best: dict, true_j: dict) -> str:
 
 def write_report(out_dir: Path, fig_paths: dict, best_params: dict,
                  true_json: dict, comp_json: dict, milestones: list,
-                 total_sec: float) -> Path:
-    from datetime import date
-    today = date.today().isoformat()
+                 total_sec: float, parallel_config: dict | None = None) -> Path:
+    from datetime import datetime
+    today = datetime.now(KST).strftime("%Y-%m-%d %H:%M:%S KST")
 
     tc = true_json.get("truth", {})
     tp = true_json.get("ocp", {})
     param_table = _param_table_md(best_params, true_json)
     dr2_table   = _dr2_table_md(best_params, true_json)
+    pc = parallel_config or {}
+    fit_model = pc.get("fit_model", REPORT_FIT_MODEL)
+    relation = (
+        "DFN 진실 → DFN 역추정 — 같은 모델 형식"
+        if fit_model == "DFN"
+        else "DFN 진실 → SPMe 역추정 — 전해액 거동의 1차 근사 오차 포함"
+    )
+    lw = pc.get("loss_weights", {})
+    loss_desc = (
+        f"{lw.get('Vt_MSE', 0.1)} × V(t) MSE + "
+        f"{lw.get('VQ_MSE', 0.5)} × V(Q) MSE + "
+        f"{lw.get('dQdV_MSE_normalized', 5.0)} × normalized dQ/dV(V) MSE"
+    )
+    dqdv_points = pc.get("dqdv_profile_points", [])
+    dqdv_point_rows = ""
+    if dqdv_points:
+        rows = [
+            "",
+            "### dQ/dV(V) loss point 수",
+            "",
+            "| Cycle | C-rate | sample 전체점 | 충전점 | 방전점 | rest점 | dQ/dV grid | 충전 finite | 방전 finite |",
+            "|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        ]
+        for item in dqdv_points:
+            rows.append(
+                f"| {item.get('cycle')} | {item.get('c_rate')}C | "
+                f"{item.get('raw_sample_points', item.get('raw_subsample_points'))} | "
+                f"{item.get('charge_points', '—')} | {item.get('discharge_points')} | "
+                f"{item.get('rest_points', '—')} | {item.get('dqdv_grid_points')} | "
+                f"{item.get('charge_finite_dqdv_points', '—')} | "
+                f"{item.get('discharge_finite_dqdv_points', item.get('finite_dqdv_points'))} |"
+            )
+        dqdv_point_rows = "\n".join(rows)
 
     ms_rows = ["| # | 단계 | Loss | D_R3m | D_C2m | R3m ctr | C2m ctr | frac_R3m |",
                "|---|:---|---:|---:|---:|---:|---:|---:|"]
@@ -509,8 +548,8 @@ def write_report(out_dir: Path, fig_paths: dict, best_params: dict,
 
 > 생성일: {today}
 > 진실값 모델: **PyBaMM DFN** (반전지, 2상 양극)
-> 역추정 모델: **PyBaMM SPMe** (반전지, 2상 양극)
-> **Model-form mismatch**: DFN 진실 → SPMe 역추정 — 전해액 거동의 1차 근사 오차 포함
+> 역추정 모델: **PyBaMM {fit_model}** (반전지, 2상 양극)
+> **모델 관계**: {relation}
 
 ---
 
@@ -519,13 +558,17 @@ def write_report(out_dir: Path, fig_paths: dict, best_params: dict,
 | 항목 | 내용 |
 |:---|:---|
 | 가상 데이터 생성 모델 | PyBaMM DFN (Doyle-Fuller-Newman, half-cell) |
-| 역추정 피팅 모델 | PyBaMM SPMe (Single Particle Model with Electrolyte, half-cell) |
+| 역추정 피팅 모델 | PyBaMM {fit_model} (half-cell) |
 | 최적화 방법 | Optuna TPE → scipy L-BFGS-B (멀티 스타트) |
 | 피팅 C-rate | 0.1C, 0.33C, 0.5C, 1.0C (4개 동시) |
 | 서브샘플링 | 1/600 (원본 0.5 s 기준) |
-| Loss 함수 | 0.3 × V(t) MSE + 1.0 × V(Q) MSE (사이클 평균) |
+| Loss 함수 | {loss_desc} (사이클 평균) |
+| Optuna trial 병렬 | `{pc.get('optuna_trial_workers', '—')}` workers |
+| Optuna trial 내부 C-rate 병렬 | `{pc.get('optuna_cycle_workers_per_trial', '—')}` workers/trial |
+| scipy C-rate 병렬 | `{pc.get('scipy_cycle_workers', '—')}` process workers |
 | 총 소요 시간 | {total_sec:.0f} 초 ({total_sec/60:.1f} 분) |
 | 최종 loss | `{comp_json.get('final_loss', '—'):.6f}` |
+{dqdv_point_rows}
 
 ### 진실값 파라미터 (DFN)
 
@@ -551,8 +594,8 @@ def write_report(out_dir: Path, fig_paths: dict, best_params: dict,
 {dr2_table}
 
 > D/R²는 구형 확산의 특성 시간상수 τ = R²/D의 역수.
-> SPM/SPMe에서 D와 R은 이 조합으로만 식별 가능하다 (D·R² 축퇴).
-> C2m의 D/R²는 진실값에 매우 근접하게 추정됐으며, R3m은 약간의 과소 추정이 있다.
+> 입자 확산 모델에서 D와 R은 이 조합으로 강하게 결합되어 식별된다.
+> 이번 병렬 Optuna 실행에서는 짧은 scipy 정제 조건을 사용했으므로, D와 R의 개별값 및 D/R²에는 보상 오차가 남아 있다.
 
 ---
 
@@ -560,8 +603,8 @@ def write_report(out_dir: Path, fig_paths: dict, best_params: dict,
 
 ![V(Q) 비교]({_fig_rel(fig_paths['vq'])})
 
-> 방전 V(Q) 곡선 비교. 검은 실선: DFN 진실값, 빨간 점선: SPMe 피팅 결과.
-> 0.1C에서 가장 잘 일치하며, 고율(1C)에서 model-form mismatch로 인한 오차 증가.
+> 방전 V(Q) 곡선 비교. 검은 실선: DFN 진실값, 빨간 점선: {fit_model} 피팅 결과.
+> 고율(1C)에서는 dQ/dV-only 목적함수 및 sparse sampling 영향으로 V(Q) 오차가 커질 수 있다.
 
 ---
 
@@ -570,7 +613,7 @@ def write_report(out_dir: Path, fig_paths: dict, best_params: dict,
 ![dQ/dV 비교]({_fig_rel(fig_paths['dqdv'])})
 
 > 방전 dQ/dV 곡선 비교. R3m (~3.7 V) 및 C2m (~3.2 V) 피크 위치를 확인.
-> SPMe 피팅이 두 피크 위치를 대체로 재현하나, 피크 폭과 높이에 오차 존재.
+> {fit_model} 피팅의 피크 위치, 폭, 높이 오차는 위 파라미터 표 및 그림에서 함께 확인해야 한다.
 
 ---
 
@@ -579,7 +622,7 @@ def write_report(out_dir: Path, fig_paths: dict, best_params: dict,
 ![dQ/dV 오버레이]({_fig_rel(fig_paths['overlay'])})
 
 > 각 C-rate의 dQ/dV를 한 그래프에 표시. C-rate 증가에 따른 피크 이동(분극 효과)을
-> 진실값(DFN)과 SPMe 피팅 모두에서 확인할 수 있다.
+> 진실값(DFN)과 {fit_model} 피팅 모두에서 확인할 수 있다.
 
 ---
 
@@ -613,27 +656,27 @@ def write_report(out_dir: Path, fig_paths: dict, best_params: dict,
 ![OCP 비교]({_fig_rel(fig_paths['ocp'])})
 
 > 좌: OCP 곡선 (stoichiometry 기준). 우: dQ/dV 공간의 OCP 분포 (전압 기준).
-> SPMe 피팅은 두 phase의 OCP 중심 전압을 잘 복원하나,
-> sigma(피크 폭)에 약간의 오차가 있다.
+> {fit_model} 피팅은 두 phase의 OCP 중심과 폭을 동시에 조정한다.
+> 이번 실행에서는 R3m 중심은 비교적 근접하지만, C2m 중심과 sigma에는 잔여 오차가 있다.
 
 ---
 
 ## 9. 모델-형식 불일치 (Model-Form Mismatch) 분석
 
-### DFN vs SPMe 차이점
+### 모델 형식 영향
 
-| 물리 효과 | DFN (진실) | SPMe (피팅) |
+| 물리 효과 | DFN (진실) | {fit_model} (피팅) |
 |:---|:---|:---|
-| 전해액 농도 분포 | 완전 계산 (Fick 확산) | 1차 근사 (평균 농도) |
-| 전극 내 전류 분포 j(x) | 완전 분포 | 균일 가정 |
-| 고율 분극 | 정확 | 과소 추정 가능 |
-| 계산 비용 | 높음 | 낮음 (~3×) |
+| 전해액 농도 분포 | 완전 계산 (Fick 확산) | {"완전 계산 (Fick 확산)" if fit_model == "DFN" else "1차 근사 (평균 농도)"} |
+| 전극 내 전류 분포 j(x) | 완전 분포 | {"완전 분포" if fit_model == "DFN" else "균일 가정"} |
+| 고율 분극 | 정확 | {"동일 모델 형식" if fit_model == "DFN" else "과소 추정 가능"} |
+| 계산 비용 | 높음 | {"높음" if fit_model == "DFN" else "낮음 (~3×)"} |
 
 ### 불일치가 역추정에 미치는 영향
 
-1. **`frac_R3m` 과대 추정** (+12%): DFN의 전해액 저항 효과를 SPMe가 위상 분율로 보상하는 경향.
-2. **OCP 중심 전압**: R3m/C2m 모두 0.1V 이내로 잘 복원됨 — OCP는 상대적으로 model-form에 덜 민감.
-3. **D/R² 시간스케일**: C2m은 거의 정확(~1x), R3m은 약 4배 과소 추정 — 전해액 분극 효과와 entangled.
+1. **위상 분율 보상**: dQ/dV-only fitting에서는 전압-용량 전체 형상이 아니라 피크 형상을 우선하므로 `frac_R3m` 및 접촉저항 보상이 남을 수 있다.
+2. **OCP 중심 전압**: R3m/C2m 중심은 모두 비교적 근접하게 복원됐다. 더 많은 Optuna trial 또는 scipy 정제를 늘리면 피크 폭과 D/R² 보상 오차 개선 여지가 있다.
+3. **D/R² 시간스케일**: D와 R은 상호 보상 가능성이 크므로 개별 D/R 해석보다 D/R² 및 프로파일 재현성을 함께 봐야 한다.
 
 ---
 
@@ -643,9 +686,9 @@ def write_report(out_dir: Path, fig_paths: dict, best_params: dict,
 |:---|:---|
 | OCP 중심 (R3m) | 진실 3.70V → 추정 {best_params.get('R3m_center_v', 0):.2f}V |
 | OCP 중심 (C2m) | 진실 3.20V → 추정 {best_params.get('C2m_center_v', 0):.2f}V |
-| D_C2m (D/R² 기준) | 진실 대비 **~{comp_json.get('final_loss', 0.007):.2e}** loss 달성 |
+| 최종 loss | `{comp_json.get('final_loss', 0):.6f}` |
 | Phase swap | **발생 없음** (전압 범위 분리로 완전 차단) |
-| 주요 한계 | frac_R3m 과대 추정, D·R² 축퇴로 D/R 개별 불가 |
+| 주요 한계 | 짧은 scipy 정제로 인한 잔여 오차, D·R² 축퇴로 D/R 개별 불가 |
 
 > **권고**: 입자 반경 R을 SEM/XRD로 사전 측정하여 고정하면 D도 정확히 복원될 것으로 예상.
 > SOC 선택적 EIS를 결합하면 두 phase의 D를 독립적으로 검증할 수 있다.
@@ -658,6 +701,7 @@ def write_report(out_dir: Path, fig_paths: dict, best_params: dict,
 # ─── 메인 ────────────────────────────────────────────────────────────────────
 
 def main(args):
+    global REPORT_FIT_MODEL
     fit_dir  = Path(args.fit_dir)
     data_csv = Path(args.data_csv)
     fig_dir  = fit_dir / "figures"
@@ -669,6 +713,9 @@ def main(args):
     # 결과 로드
     best_params = json.loads((fit_dir / "best_params.json").read_text())
     comp_json   = json.loads((fit_dir / "comparison.json").read_text())
+    parallel_path = fit_dir / "parallel_config.json"
+    parallel_config = json.loads(parallel_path.read_text()) if parallel_path.exists() else {}
+    REPORT_FIT_MODEL = parallel_config.get("fit_model", "SPMe")
     true_path = data_csv.parent / "true_lmr_dfn_parameters.json"
     if not true_path.exists():
         true_path = fit_dir / "comparison.json"
@@ -681,7 +728,7 @@ def main(args):
     # 모듈 & 모델 로드
     print("  모델 초기화...", flush=True)
     gen        = _load_gen()
-    spme_model = _build_spme_model()
+    fit_model = _build_fit_model(REPORT_FIT_MODEL)
 
     # DFN truth 데이터 로드 (pandas 직접)
     print("  DFN 데이터 로드...", flush=True)
@@ -697,14 +744,14 @@ def main(args):
         cyc = profile.select_cycle(cid)
         dfn_cycles.append((cyc.time_s, cyc.voltage_v, cyc.current_a))
 
-    # SPMe 최적 파라미터로 시뮬레이션 (4 사이클)
-    print("  SPMe 최적 결과 시뮬레이션 중...", flush=True)
+    # 최적 파라미터로 시뮬레이션 (4 사이클)
+    print(f"  {REPORT_FIT_MODEL} 최적 결과 시뮬레이션 중...", flush=True)
     pv_best = _params_from_dict(gen, best_params)
-    spme_cycles = []
+    fit_cycles = []
     for cid, dfn_res in enumerate(dfn_cycles, start=1):
         t_s, _v, i_a = dfn_res   # (time, voltage, current)
-        res = _run_cycle(spme_model, pv_best, t_s, i_a, subsample=args.subsample_plot)
-        spme_cycles.append(res)
+        res = _run_cycle(fit_model, pv_best, t_s, i_a, subsample=args.subsample_plot)
+        fit_cycles.append(res)
         print(f"    cycle {cid}: {'OK' if res else 'FAIL'}", flush=True)
 
     # 마일스톤 시뮬레이션 (0.1C만)
@@ -713,7 +760,7 @@ def main(args):
     milestone_results = []
     for ms in milestones:
         pv = _params_from_dict(gen, ms["params"])
-        res = _run_cycle(spme_model, pv, dfn_c1[0], dfn_c1[2],
+        res = _run_cycle(fit_model, pv, dfn_c1[0], dfn_c1[2],
                          subsample=args.subsample_plot)
         milestone_results.append(res)
         print(f"    {ms['label']}: {'OK' if res else 'FAIL'}", flush=True)
@@ -722,12 +769,12 @@ def main(args):
     print("  그림 생성 중...", flush=True)
     total_sec = comp_json.get("final_loss", 0)  # 실제 소요시간은 comparison에 없으므로 대략값 사용
     # fit_history 마지막 줄에서 시간 추정 (없으면 기본값)
-    elapsed_sec = 1793.0  # 이전 실행에서 알려진 값
+    elapsed_sec = float(parallel_config.get("elapsed_seconds", 1793.0))
 
     fig_paths = {
-        "vq":         fig_vq_comparison(dfn_cycles, spme_cycles, fig_dir),
-        "dqdv":       fig_dqdv_comparison(dfn_cycles, spme_cycles, fig_dir),
-        "overlay":    fig_dqdv_crate_overlay(dfn_cycles, spme_cycles, fig_dir),
+        "vq":         fig_vq_comparison(dfn_cycles, fit_cycles, fig_dir),
+        "dqdv":       fig_dqdv_comparison(dfn_cycles, fit_cycles, fig_dir),
+        "overlay":    fig_dqdv_crate_overlay(dfn_cycles, fit_cycles, fig_dir),
         "convergence": fig_convergence_dqdv(dfn_cycles[0], milestone_results,
                                              milestones, fig_dir),
         "loss":       fig_loss_history(fit_dir / "fit_history.jsonl", fig_dir),
@@ -738,20 +785,21 @@ def main(args):
 
     # 마크다운 리포트
     report_path = write_report(fit_dir, fig_paths, best_params, true_json,
-                                comp_json, milestones, elapsed_sec)
+                                comp_json, milestones, elapsed_sec,
+                                parallel_config)
     print(f"\n리포트 완료: {report_path}")
     print(f"총 소요: {time.time() - t0:.0f}s")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="SPMe 2상 역추정 결과 리포트 생성",
+        description="LMR 2상 역추정 결과 리포트 생성",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "--fit-dir",
-        default="data/fit_results/spme_2phase",
-        help="run_spme_2phase_fit.py 출력 디렉토리",
+        default="data/fit_results/lmr_2phase",
+        help="run_lmr_2phase_fit.py 출력 디렉토리",
     )
     parser.add_argument(
         "--data-csv",
@@ -760,7 +808,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--subsample-plot", type=int, default=200,
-        help="리포트용 SPMe 시뮬레이션 서브샘플 스텝 (작을수록 부드러운 곡선, 느림)",
+        help="리포트용 fitting 모델 시뮬레이션 서브샘플 스텝 (작을수록 부드러운 곡선, 느림)",
     )
     args = parser.parse_args()
     main(args)
