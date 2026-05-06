@@ -35,6 +35,7 @@ import json
 import multiprocessing
 import os
 import sys
+import threading
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -88,6 +89,15 @@ NOM_CAP_AH    = 0.005
 C_S_0_FRAC    = 0.99
 N_GRID        = 512
 
+# SPMe 모델 옵션 (스레드 워커가 모델을 독립적으로 초기화할 때 사용)
+SPME_OPTIONS = {
+    "working electrode": "positive",
+    "particle phases":   ("1", "2"),
+    "particle":          "Fickian diffusion",
+    "particle size":     "single",
+    "surface form":      "differential",
+}
+
 
 # ─── 실시간 모니터 ────────────────────────────────────────────────────────────
 
@@ -104,6 +114,7 @@ class Monitor:
         self.n_trial     = 0
         self.phase       = "Optuna"
         self.t_start     = time.time()
+        self._lock       = threading.Lock()
         self._print_header()
 
     def _print_header(self):
@@ -125,27 +136,28 @@ class Monitor:
         print("-" * 76)
 
     def update(self, loss: float, params: dict):
-        self.n_trial += 1
-        improved = loss < self.best_loss
-        if improved:
-            self.best_loss   = loss
-            self.best_params = params.copy()
+        with self._lock:
+            self.n_trial += 1
+            improved = loss < self.best_loss
+            if improved:
+                self.best_loss   = loss
+                self.best_params = params.copy()
 
-        D_r  = 10.0 ** params.get("log10_D_R3m", -16)
-        D_c  = 10.0 ** params.get("log10_D_C2m", -18)
-        cr   = params.get("R3m_center_v", 0.0)
-        cc   = params.get("C2m_center_v", 0.0)
-        frac = params.get("frac_R3m", 0.0)
-        star = "★" if improved else " "
-        elapsed = time.time() - self.t_start
+            D_r  = 10.0 ** params.get("log10_D_R3m", -16)
+            D_c  = 10.0 ** params.get("log10_D_C2m", -18)
+            cr   = params.get("R3m_center_v", 0.0)
+            cc   = params.get("C2m_center_v", 0.0)
+            frac = params.get("frac_R3m", 0.0)
+            star = "★" if improved else " "
+            elapsed = time.time() - self.t_start
 
-        print(
-            f"  {self.phase:<10} {self.n_trial:>6}  {loss:>12.6f}  "
-            f"{D_r:>10.3e}  {D_c:>10.3e}  "
-            f"{cr:>8.3f}V  {cc:>8.3f}V  {frac:>7.4f}  "
-            f"{star}  [{elapsed:5.0f}s]",
-            flush=True,
-        )
+            print(
+                f"  {self.phase:<10} {self.n_trial:>6}  {loss:>12.6f}  "
+                f"{D_r:>10.3e}  {D_c:>10.3e}  "
+                f"{cr:>8.3f}V  {cc:>8.3f}V  {frac:>7.4f}  "
+                f"{star}  [{elapsed:5.0f}s]",
+                flush=True,
+            )
 
     def set_phase(self, phase: str):
         self.phase = phase
@@ -191,9 +203,22 @@ class Monitor:
 
 
 # ─── 병렬 워커 ──────────────────────────────────────────────────────────────────
-# fork 컨텍스트 사용: 모델 빌드 후 첫 solve 전에 fork하면 CasADi 컴파일 함수를
-# 공유 메모리로 상속하므로 워커 초기화 오버헤드가 없다.
 
+# ── Optuna 스레드 병렬: 각 스레드가 독립 SPMe 모델을 보유 ──
+_thread_local = threading.local()
+_hist_lock    = threading.Lock()   # fit_history.jsonl 동시 쓰기 보호
+
+
+def _get_thread_model_gen():
+    """스레드-로컬 SPMe 모델과 gen 모듈 반환 (스레드당 1회만 초기화)."""
+    if not hasattr(_thread_local, "spme_model"):
+        import pybamm as _pybamm
+        _thread_local.spme_model = _pybamm.lithium_ion.SPMe(SPME_OPTIONS)
+        _thread_local.gen        = _load_gen()
+    return _thread_local.spme_model, _thread_local.gen
+
+
+# ── scipy 사이클 프로세스 풀 (fork): CasADi 컴파일 함수 상속 ──
 _w_model = None   # 워커 프로세스에서 사용할 SPMe 모델 (fork 전 부모에서 설정)
 _w_gen   = None   # 워커 프로세스에서 사용할 gen 모듈
 _POOL: "concurrent.futures.ProcessPoolExecutor | None" = None
@@ -308,14 +333,16 @@ def _cycle_loss(spme_model, pv,
 
 def compute_loss(v_vec: np.ndarray,
                   gen, spme_model,
-                  cycles_data: list[tuple]) -> float:
+                  cycles_data: list[tuple],
+                  use_pool: bool = True) -> float:
     """멀티 C-rate 동시 loss (사이클 평균).
 
-    _POOL 이 초기화된 경우 각 사이클을 별도 프로세스에서 병렬 실행한다.
+    use_pool=True  이고 _POOL 이 초기화된 경우 각 사이클을 별도 프로세스에서 병렬 실행한다.
+    use_pool=False (Optuna 스레드 경로): 전달된 gen/spme_model 로 순차 실행한다.
     """
     v_clip = np.clip(v_vec, LOWER, UPPER)
 
-    if _POOL is not None:
+    if use_pool and _POOL is not None:
         try:
             payloads = [(v_clip, t, i, v) for t, i, v in cycles_data]
             losses   = list(_POOL.map(_cycle_worker, payloads))
@@ -334,18 +361,34 @@ def compute_loss(v_vec: np.ndarray,
 
 # ─── Optuna 탐색 ──────────────────────────────────────────────────────────────
 
-def run_optuna(gen, spme_model, cycles_data, monitor, n_trials, seed, out_dir) -> np.ndarray:
+def run_optuna(gen, spme_model, cycles_data, monitor, n_trials, seed, out_dir,
+               n_jobs: int = 1) -> np.ndarray:
+    """Optuna 탐색.
+
+    n_jobs > 1: 각 trial을 별도 스레드에서 실행 (joblib prefer='threads').
+    CasADi/SUNDIALS 는 GIL을 해제하므로 실제 병렬 연산이 이뤄진다.
+    각 스레드는 _get_thread_model_gen() 을 통해 독립 SPMe 모델을 보유한다.
+    """
     import optuna
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     hist = out_dir / "fit_history.jsonl"
-    monitor.set_phase("Optuna")
+
+    phase_label = f"Optuna(×{n_jobs})" if n_jobs > 1 else "Optuna"
+    monitor.set_phase(phase_label)
+    if n_jobs > 1:
+        print(f"  Optuna 스레드 병렬: {n_jobs} workers  (TPE batch mode)", flush=True)
 
     def objective(trial):
         v = np.array([trial.suggest_float(k, lo, hi) for k, lo, hi, _ in PARAM_DEFS])
-        loss = compute_loss(v, gen, spme_model, cycles_data)
+        # n_jobs>1 이면 스레드-로컬 모델 사용, 아니면 전달된 모델 사용
+        if n_jobs > 1:
+            t_model, t_gen = _get_thread_model_gen()
+            loss = compute_loss(v, t_gen, t_model, cycles_data, use_pool=False)
+        else:
+            loss = compute_loss(v, gen, spme_model, cycles_data)
         params = {k: float(v[i]) for i, k in enumerate(PARAM_KEYS)}
         monitor.update(loss, params)
-        with open(hist, "a") as f:
+        with _hist_lock, open(hist, "a") as f:
             f.write(json.dumps({"type": "optuna", "loss": loss, **params}) + "\n")
         return loss
 
@@ -353,7 +396,7 @@ def run_optuna(gen, spme_model, cycles_data, monitor, n_trials, seed, out_dir) -
         direction="minimize",
         sampler=optuna.samplers.TPESampler(seed=seed),
     )
-    study.optimize(objective, n_trials=n_trials)
+    study.optimize(objective, n_trials=n_trials, n_jobs=n_jobs)
     best = study.best_trial
     return np.array([best.params[k] for k in PARAM_KEYS])
 
@@ -505,23 +548,17 @@ def main(args):
     monitor = Monitor(model_desc, data_desc, args.n_optuna, args.n_scipy, true_params)
 
     print("  PyBaMM SPMe 2상 모델 초기화...", flush=True)
-    options = {
-        "working electrode": "positive",
-        "particle phases":   ("1", "2"),
-        "particle":          "Fickian diffusion",
-        "particle size":     "single",
-        "surface form":      "differential",
-    }
-    spme_model = pybamm.lithium_ion.SPMe(options)
+    spme_model = pybamm.lithium_ion.SPMe(SPME_OPTIONS)
     print("  모델 초기화 완료.")
 
-    # 병렬 풀 초기화: 첫 solve 전에 fork해야 CasADi 함수를 clean하게 상속
-    _init_pool(args.n_jobs, spme_model, gen)
+    # scipy 단계용 사이클 병렬 풀 초기화 (첫 solve 전 fork)
+    _init_pool(args.n_cycle_workers, spme_model, gen)
     print()
 
     try:
         best_optuna = run_optuna(gen, spme_model, cycles_data,
-                                  monitor, args.n_optuna, args.seed, out_dir)
+                                  monitor, args.n_optuna, args.seed, out_dir,
+                                  n_jobs=args.n_jobs)
         best_final  = run_scipy(best_optuna, gen, spme_model, cycles_data,
                                  monitor, args.n_scipy, out_dir)
         save_results(best_final, monitor, args.true_params, out_dir)
@@ -558,8 +595,12 @@ if __name__ == "__main__":
     parser.add_argument("--n-scipy",   type=int, default=500)
     parser.add_argument("--seed",      type=int, default=42)
     parser.add_argument(
-        "--n-jobs", type=int, default=4,
-        help="병렬 워커 수 (4 C-rate 사이클 동시 평가). 1=순차, 4=기본",
+        "--n-jobs", type=int, default=1,
+        help="Optuna 병렬 스레드 수 (trial 동시 실행). 1=순차, 20=최대 활용",
+    )
+    parser.add_argument(
+        "--n-cycle-workers", type=int, default=4,
+        help="scipy 단계 사이클 병렬 프로세스 수. 1=순차, 4=기본",
     )
     args = parser.parse_args()
     main(args)
