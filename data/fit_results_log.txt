@@ -1,0 +1,513 @@
+05:58:18  INFO     === Stage 1 역추정 시작 ===
+05:58:18  INFO     데이터: data/raw/toyo/native_2phase_gaussian_c2m_low_broad_2x_D100x_slow_sample/Toyo_LMR_native2phase_PyBaMM_0p1C_0p33C_0p5C_1C.csv
+05:58:18  INFO     출력:   data/fit_results/stage1_gaussianc2m
+05:58:18  INFO     파일 파싱 시작: data/raw/toyo/native_2phase_gaussian_c2m_low_broad_2x_D100x_slow_sample/Toyo_LMR_native2phase_PyBaMM_0p1C_0p33C_0p5C_1C.csv
+05:58:19  INFO       파싱 완료: 215684포인트, 16세그먼트, 사이클 [1, 2, 3, 4]
+05:58:19  INFO     데이터 로드: cycle=1, n=231 포인트, span=19.2h
+05:58:19  INFO     PyBaMM SPM 모델 초기화...
+05:58:19  INFO     
+[1/2] Optuna TPE 전역 탐색 (n_trials=80) ...
+05:58:19  INFO       trial   1/80  loss=419.248144  D_R3m=1e-16.50  D_C2m=1e-16.61  frac_R3m=0.686  elapsed=0s
+05:58:19  INFO       trial   2/80  loss=100000000.000000  D_R3m=1e-17.51  D_C2m=1e-15.36  frac_R3m=0.128  elapsed=0s
+05:58:19  INFO       trial   3/80  loss=2.882801  D_R3m=1e-14.55  D_C2m=1e-18.75  frac_R3m=0.365  elapsed=0s
+05:58:19  INFO       trial   4/80  loss=0.357441  D_R3m=1e-14.77  D_C2m=1e-18.56  frac_R3m=0.354  elapsed=0s
+05:58:19  INFO       trial   5/80  loss=2.153994  D_R3m=1e-16.53  D_C2m=1e-16.86  frac_R3m=0.607  elapsed=0s
+05:58:19  INFO       trial   6/80  loss=100000000.000000  D_R3m=1e-15.43  D_C2m=1e-15.41  frac_R3m=0.229  elapsed=0s
+05:58:20  INFO       trial   7/80  loss=0.195497  D_R3m=1e-14.24  D_C2m=1e-17.52  frac_R3m=0.832  elapsed=1s
+05:58:20  INFO       trial   8/80  loss=0.982975  D_R3m=1e-14.44  D_C2m=1e-18.62  frac_R3m=0.400  elapsed=1s
+05:58:20  INFO       trial   9/80  loss=100000000.000000  D_R3m=1e-15.80  D_C2m=1e-17.88  frac_R3m=0.628  elapsed=1s
+05:58:20  INFO       trial  10/80  loss=1329.841754  D_R3m=1e-16.45  D_C2m=1e-16.82  frac_R3m=0.467  elapsed=1s
+05:58:20  INFO       trial  11/80  loss=3.556422  D_R3m=1e-14.08  D_C2m=1e-17.66  frac_R3m=0.876  elapsed=1s
+05:58:20  INFO       trial  12/80  loss=1.149086  D_R3m=1e-15.01  D_C2m=1e-17.82  frac_R3m=0.874  elapsed=1s
+05:58:20  INFO       trial  13/80  loss=0.590906  D_R3m=1e-14.93  D_C2m=1e-18.19  frac_R3m=0.291  elapsed=1s
+05:58:20  INFO       trial  14/80  loss=100000000.000000  D_R3m=1e-14.00  D_C2m=1e-17.34  frac_R3m=0.734  elapsed=1s
+05:58:21  INFO       trial  15/80  loss=0.034706  D_R3m=1e-15.09  D_C2m=1e-18.95  frac_R3m=0.544  elapsed=1s
+05:58:21  INFO       trial  16/80  loss=0.062143  D_R3m=1e-15.42  D_C2m=1e-15.97  frac_R3m=0.766  elapsed=2s
+05:58:21  INFO       trial  17/80  loss=0.416433  D_R3m=1e-15.52  D_C2m=1e-16.07  frac_R3m=0.514  elapsed=2s
+05:58:21  INFO       trial  18/80  loss=0.102050  D_R3m=1e-17.31  D_C2m=1e-16.13  frac_R3m=0.760  elapsed=2s
+05:58:21  INFO       trial  19/80  loss=0.019736  D_R3m=1e-16.05  D_C2m=1e-15.88  frac_R3m=0.540  elapsed=2s
+05:58:21  INFO       trial  20/80  loss=0.019900  D_R3m=1e-17.98  D_C2m=1e-15.15  frac_R3m=0.530  elapsed=2s
+05:58:22  INFO       trial  21/80  loss=0.025900  D_R3m=1e-17.96  D_C2m=1e-15.72  frac_R3m=0.593  elapsed=2s
+05:58:22  INFO       trial  22/80  loss=0.032613  D_R3m=1e-17.82  D_C2m=1e-15.06  frac_R3m=0.592  elapsed=3s
+05:58:22  INFO       trial  23/80  loss=0.013744  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.452  elapsed=3s
+05:58:22  INFO       trial  24/80  loss=0.214977  D_R3m=1e-16.96  D_C2m=1e-15.11  frac_R3m=0.410  elapsed=3s
+05:58:22  INFO       trial  25/80  loss=0.223817  D_R3m=1e-17.07  D_C2m=1e-15.65  frac_R3m=0.471  elapsed=3s
+05:58:22  INFO       trial  26/80  loss=100000000.000000  D_R3m=1e-16.11  D_C2m=1e-16.41  frac_R3m=0.528  elapsed=3s
+05:58:23  INFO       trial  27/80  loss=0.069582  D_R3m=1e-16.85  D_C2m=1e-15.60  frac_R3m=0.442  elapsed=3s
+05:58:23  INFO       trial  28/80  loss=0.042807  D_R3m=1e-17.61  D_C2m=1e-16.33  frac_R3m=0.656  elapsed=4s
+05:58:23  INFO       trial  29/80  loss=100000000.000000  D_R3m=1e-16.19  D_C2m=1e-15.85  frac_R3m=0.294  elapsed=4s
+05:58:23  INFO       trial  30/80  loss=0.080213  D_R3m=1e-16.63  D_C2m=1e-15.34  frac_R3m=0.547  elapsed=4s
+05:58:23  INFO       trial  31/80  loss=0.043597  D_R3m=1e-17.20  D_C2m=1e-16.52  frac_R3m=0.695  elapsed=4s
+05:58:23  INFO       trial  32/80  loss=0.100759  D_R3m=1e-17.91  D_C2m=1e-15.69  frac_R3m=0.574  elapsed=4s
+05:58:23  INFO       trial  33/80  loss=0.129519  D_R3m=1e-17.49  D_C2m=1e-15.25  frac_R3m=0.496  elapsed=4s
+05:58:24  INFO       trial  34/80  loss=0.085043  D_R3m=1e-18.00  D_C2m=1e-15.52  frac_R3m=0.680  elapsed=5s
+05:58:24  INFO       trial  35/80  loss=0.404433  D_R3m=1e-17.66  D_C2m=1e-16.20  frac_R3m=0.142  elapsed=5s
+05:58:24  INFO       trial  36/80  loss=0.099449  D_R3m=1e-17.34  D_C2m=1e-15.87  frac_R3m=0.348  elapsed=5s
+05:58:24  INFO       trial  37/80  loss=100000000.000000  D_R3m=1e-16.76  D_C2m=1e-17.11  frac_R3m=0.630  elapsed=5s
+05:58:24  INFO       trial  38/80  loss=0.819664  D_R3m=1e-17.66  D_C2m=1e-15.05  frac_R3m=0.407  elapsed=5s
+05:58:24  INFO       trial  39/80  loss=0.098137  D_R3m=1e-17.76  D_C2m=1e-15.38  frac_R3m=0.567  elapsed=5s
+05:58:25  INFO       trial  40/80  loss=0.084225  D_R3m=1e-16.31  D_C2m=1e-16.67  frac_R3m=0.486  elapsed=5s
+05:58:25  INFO       trial  41/80  loss=0.067500  D_R3m=1e-15.99  D_C2m=1e-15.80  frac_R3m=0.441  elapsed=6s
+05:58:25  INFO       trial  42/80  loss=0.084064  D_R3m=1e-17.89  D_C2m=1e-15.21  frac_R3m=0.595  elapsed=6s
+05:58:25  INFO       trial  43/80  loss=0.039482  D_R3m=1e-17.47  D_C2m=1e-15.49  frac_R3m=0.611  elapsed=6s
+05:58:25  INFO       trial  44/80  loss=0.261736  D_R3m=1e-17.80  D_C2m=1e-15.01  frac_R3m=0.581  elapsed=6s
+05:58:25  INFO       trial  45/80  loss=0.502608  D_R3m=1e-17.15  D_C2m=1e-15.20  frac_R3m=0.639  elapsed=6s
+05:58:26  INFO       trial  46/80  loss=0.636990  D_R3m=1e-17.99  D_C2m=1e-15.43  frac_R3m=0.356  elapsed=6s
+05:58:26  INFO       trial  47/80  loss=0.105539  D_R3m=1e-17.40  D_C2m=1e-15.67  frac_R3m=0.718  elapsed=7s
+05:58:26  INFO       trial  48/80  loss=0.351399  D_R3m=1e-17.76  D_C2m=1e-16.00  frac_R3m=0.517  elapsed=7s
+05:58:26  INFO       trial  49/80  loss=0.097606  D_R3m=1e-15.89  D_C2m=1e-16.29  frac_R3m=0.440  elapsed=7s
+05:58:26  INFO       trial  50/80  loss=0.046276  D_R3m=1e-15.65  D_C2m=1e-15.29  frac_R3m=0.557  elapsed=7s
+05:58:26  INFO       trial  51/80  loss=0.117320  D_R3m=1e-16.63  D_C2m=1e-15.00  frac_R3m=0.668  elapsed=7s
+05:58:27  INFO       trial  52/80  loss=1648.387673  D_R3m=1e-17.57  D_C2m=1e-18.82  frac_R3m=0.525  elapsed=7s
+05:58:27  INFO       trial  53/80  loss=0.025231  D_R3m=1e-15.23  D_C2m=1e-18.30  frac_R3m=0.602  elapsed=8s
+05:58:27  INFO       trial  54/80  loss=0.096187  D_R3m=1e-14.39  D_C2m=1e-18.45  frac_R3m=0.607  elapsed=8s
+05:58:27  INFO       trial  55/80  loss=0.100629  D_R3m=1e-14.78  D_C2m=1e-18.18  frac_R3m=0.475  elapsed=8s
+05:58:27  INFO       trial  56/80  loss=0.435617  D_R3m=1e-15.22  D_C2m=1e-17.25  frac_R3m=0.643  elapsed=8s
+05:58:27  INFO       trial  57/80  loss=0.037311  D_R3m=1e-15.17  D_C2m=1e-16.91  frac_R3m=0.594  elapsed=8s
+05:58:28  INFO       trial  58/80  loss=0.156268  D_R3m=1e-16.97  D_C2m=1e-15.79  frac_R3m=0.544  elapsed=9s
+05:58:28  INFO       trial  59/80  loss=0.074084  D_R3m=1e-14.62  D_C2m=1e-17.70  frac_R3m=0.506  elapsed=9s
+05:58:28  INFO       trial  60/80  loss=0.091796  D_R3m=1e-15.33  D_C2m=1e-16.70  frac_R3m=0.811  elapsed=9s
+05:58:28  INFO       trial  61/80  loss=0.097226  D_R3m=1e-15.66  D_C2m=1e-15.51  frac_R3m=0.702  elapsed=9s
+05:58:28  INFO       trial  62/80  loss=0.051092  D_R3m=1e-15.13  D_C2m=1e-18.56  frac_R3m=0.533  elapsed=9s
+05:58:29  INFO       trial  63/80  loss=0.097800  D_R3m=1e-14.93  D_C2m=1e-18.97  frac_R3m=0.460  elapsed=9s
+05:58:29  INFO       trial  64/80  loss=0.426990  D_R3m=1e-14.66  D_C2m=1e-18.06  frac_R3m=0.563  elapsed=10s
+05:58:29  INFO       trial  65/80  loss=100000000.000000  D_R3m=1e-17.85  D_C2m=1e-18.84  frac_R3m=0.618  elapsed=10s
+05:58:29  INFO       trial  66/80  loss=0.058804  D_R3m=1e-15.39  D_C2m=1e-18.29  frac_R3m=0.508  elapsed=10s
+05:58:29  INFO       trial  67/80  loss=50790.711405  D_R3m=1e-17.22  D_C2m=1e-18.99  frac_R3m=0.549  elapsed=10s
+05:58:29  INFO       trial  68/80  loss=1758.814412  D_R3m=1e-16.34  D_C2m=1e-17.42  frac_R3m=0.391  elapsed=10s
+05:58:29  INFO       trial  69/80  loss=0.124672  D_R3m=1e-15.68  D_C2m=1e-15.93  frac_R3m=0.583  elapsed=10s
+05:58:29  INFO       trial  70/80  loss=0.040137  D_R3m=1e-17.50  D_C2m=1e-15.17  frac_R3m=0.655  elapsed=10s
+05:58:30  INFO       trial  71/80  loss=0.160525  D_R3m=1e-17.68  D_C2m=1e-16.51  frac_R3m=0.314  elapsed=11s
+05:58:30  INFO       trial  72/80  loss=0.021073  D_R3m=1e-15.14  D_C2m=1e-16.94  frac_R3m=0.591  elapsed=11s
+05:58:30  INFO       trial  73/80  loss=0.053235  D_R3m=1e-14.81  D_C2m=1e-16.15  frac_R3m=0.625  elapsed=11s
+05:58:30  INFO       trial  74/80  loss=0.015709  D_R3m=1e-15.01  D_C2m=1e-17.12  frac_R3m=0.575  elapsed=11s
+05:58:30  INFO       trial  75/80  loss=0.087908  D_R3m=1e-14.98  D_C2m=1e-17.17  frac_R3m=0.487  elapsed=11s
+05:58:31  INFO       trial  76/80  loss=0.083363  D_R3m=1e-14.43  D_C2m=1e-17.51  frac_R3m=0.577  elapsed=11s
+05:58:31  INFO       trial  77/80  loss=0.020286  D_R3m=1e-15.23  D_C2m=1e-16.99  frac_R3m=0.673  elapsed=12s
+05:58:31  INFO       trial  78/80  loss=0.242593  D_R3m=1e-15.53  D_C2m=1e-16.98  frac_R3m=0.672  elapsed=12s
+05:58:31  INFO       trial  79/80  loss=0.074985  D_R3m=1e-15.05  D_C2m=1e-16.80  frac_R3m=0.458  elapsed=12s
+05:58:31  INFO       trial  80/80  loss=0.032409  D_R3m=1e-14.86  D_C2m=1e-17.78  frac_R3m=0.770  elapsed=12s
+05:58:31  INFO     Optuna 완료: best_loss=0.013744, trial=23
+05:58:31  INFO     
+[2/2] scipy L-BFGS-B 지역 정제 (max_iter=300) ...
+05:58:33  INFO       scipy iter   10  loss=0.013744  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.452  elapsed=2s
+05:58:35  INFO       scipy iter   20  loss=0.013744  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.452  elapsed=3s
+05:58:36  INFO       scipy iter   30  loss=0.013744  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.452  elapsed=5s
+05:58:38  INFO       scipy iter   40  loss=0.013744  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.452  elapsed=7s
+05:58:40  INFO       scipy iter   50  loss=0.096048  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.366  elapsed=8s
+05:58:41  INFO       scipy iter   60  loss=0.096048  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.366  elapsed=10s
+05:58:43  INFO       scipy iter   70  loss=0.096048  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.366  elapsed=12s
+05:58:45  INFO       scipy iter   80  loss=0.096048  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.366  elapsed=13s
+05:58:46  INFO       scipy iter   90  loss=0.010046  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.437  elapsed=15s
+05:58:48  INFO       scipy iter  100  loss=0.010046  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.437  elapsed=17s
+05:58:50  INFO       scipy iter  110  loss=0.010046  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.437  elapsed=18s
+05:58:51  INFO       scipy iter  120  loss=0.010046  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.437  elapsed=20s
+05:58:53  INFO       scipy iter  130  loss=0.009883  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.436  elapsed=22s
+05:58:55  INFO       scipy iter  140  loss=0.009883  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.436  elapsed=23s
+05:58:56  INFO       scipy iter  150  loss=0.009883  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.436  elapsed=25s
+05:58:58  INFO       scipy iter  160  loss=0.009883  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.436  elapsed=27s
+05:59:00  INFO       scipy iter  170  loss=0.009160  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.433  elapsed=29s
+05:59:01  INFO       scipy iter  180  loss=0.009160  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.433  elapsed=30s
+05:59:03  INFO       scipy iter  190  loss=0.009160  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.433  elapsed=32s
+05:59:05  INFO       scipy iter  200  loss=0.009160  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.433  elapsed=34s
+05:59:07  INFO       scipy iter  210  loss=0.008958  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.444  elapsed=35s
+05:59:08  INFO       scipy iter  220  loss=0.008958  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.444  elapsed=37s
+05:59:10  INFO       scipy iter  230  loss=0.008958  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.444  elapsed=39s
+05:59:12  INFO       scipy iter  240  loss=0.008958  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.444  elapsed=40s
+05:59:13  INFO       scipy iter  250  loss=0.008735  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.455  elapsed=42s
+05:59:15  INFO       scipy iter  260  loss=0.008735  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.455  elapsed=44s
+05:59:17  INFO       scipy iter  270  loss=0.008735  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.455  elapsed=45s
+05:59:18  INFO       scipy iter  280  loss=0.008735  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.455  elapsed=47s
+05:59:20  INFO       scipy iter  290  loss=0.007924  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.500  elapsed=49s
+05:59:22  INFO       scipy iter  300  loss=0.007924  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.500  elapsed=50s
+05:59:23  INFO       scipy iter  310  loss=0.007924  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.500  elapsed=52s
+05:59:25  INFO       scipy iter  320  loss=0.007924  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.500  elapsed=54s
+05:59:27  INFO       scipy iter  330  loss=55.177312  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.900  elapsed=55s
+05:59:27  INFO       scipy iter  340  loss=55.177310  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.900  elapsed=56s
+05:59:28  INFO       scipy iter  350  loss=55.177312  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.900  elapsed=57s
+05:59:29  INFO       scipy iter  360  loss=55.177312  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.900  elapsed=58s
+05:59:30  INFO       scipy iter  370  loss=0.009945  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.617  elapsed=59s
+05:59:32  INFO       scipy iter  380  loss=0.009945  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.617  elapsed=60s
+05:59:33  INFO       scipy iter  390  loss=0.009945  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.617  elapsed=62s
+05:59:35  INFO       scipy iter  400  loss=0.009945  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.617  elapsed=64s
+05:59:37  INFO       scipy iter  410  loss=0.009945  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.617  elapsed=65s
+05:59:38  INFO       scipy iter  420  loss=0.007923  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.504  elapsed=67s
+05:59:40  INFO       scipy iter  430  loss=0.007923  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.504  elapsed=69s
+05:59:42  INFO       scipy iter  440  loss=0.007923  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.504  elapsed=70s
+05:59:43  INFO       scipy iter  450  loss=0.007923  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.504  elapsed=72s
+05:59:44  INFO       scipy iter  460  loss=61.761508  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.900  elapsed=73s
+05:59:45  INFO       scipy iter  470  loss=61.761508  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.900  elapsed=74s
+05:59:46  INFO       scipy iter  480  loss=61.761508  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.900  elapsed=74s
+05:59:47  INFO       scipy iter  490  loss=61.761507  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.900  elapsed=75s
+05:59:48  INFO       scipy iter  500  loss=0.009364  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.626  elapsed=77s
+05:59:50  INFO       scipy iter  510  loss=0.009364  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.626  elapsed=78s
+05:59:51  INFO       scipy iter  520  loss=0.009364  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.626  elapsed=80s
+05:59:53  INFO       scipy iter  530  loss=0.009364  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.626  elapsed=82s
+05:59:55  INFO       scipy iter  540  loss=0.007902  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.518  elapsed=84s
+05:59:57  INFO       scipy iter  550  loss=0.007902  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.518  elapsed=85s
+05:59:58  INFO       scipy iter  560  loss=0.007902  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.518  elapsed=87s
+06:00:00  INFO       scipy iter  570  loss=0.007902  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.518  elapsed=89s
+06:00:02  INFO       scipy iter  580  loss=0.006504  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.608  elapsed=90s
+06:00:03  INFO       scipy iter  590  loss=0.006504  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.608  elapsed=92s
+06:00:05  INFO       scipy iter  600  loss=0.006504  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.608  elapsed=94s
+06:00:07  INFO       scipy iter  610  loss=0.006504  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.608  elapsed=95s
+06:00:08  INFO       scipy iter  620  loss=0.007610  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.529  elapsed=97s
+06:00:10  INFO       scipy iter  630  loss=0.007610  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.529  elapsed=99s
+06:00:12  INFO       scipy iter  640  loss=0.007610  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.529  elapsed=100s
+06:00:13  INFO       scipy iter  650  loss=0.007610  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.529  elapsed=102s
+06:00:15  INFO       scipy iter  660  loss=0.006359  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.569  elapsed=104s
+06:00:17  INFO       scipy iter  670  loss=0.006359  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.569  elapsed=105s
+06:00:18  INFO       scipy iter  680  loss=0.006359  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.569  elapsed=107s
+06:00:20  INFO       scipy iter  690  loss=0.006359  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.569  elapsed=109s
+06:00:22  INFO       scipy iter  700  loss=0.005554  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.593  elapsed=110s
+06:00:23  INFO       scipy iter  710  loss=0.005554  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.593  elapsed=112s
+06:00:25  INFO       scipy iter  720  loss=0.005554  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.593  elapsed=114s
+06:00:27  INFO       scipy iter  730  loss=0.005554  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.593  elapsed=115s
+06:00:28  INFO       scipy iter  740  loss=11.281388  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.786  elapsed=117s
+06:00:29  INFO       scipy iter  750  loss=11.281387  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.786  elapsed=118s
+06:00:30  INFO       scipy iter  760  loss=11.281388  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.786  elapsed=118s
+06:00:31  INFO       scipy iter  770  loss=11.281388  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.786  elapsed=119s
+06:00:32  INFO       scipy iter  780  loss=0.005588  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.631  elapsed=120s
+06:00:33  INFO       scipy iter  790  loss=0.005588  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.631  elapsed=122s
+06:00:35  INFO       scipy iter  800  loss=0.005588  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.631  elapsed=124s
+06:00:37  INFO       scipy iter  810  loss=0.005588  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.631  elapsed=125s
+06:00:38  INFO       scipy iter  820  loss=0.005588  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.631  elapsed=127s
+06:00:40  INFO       scipy iter  830  loss=0.005497  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.610  elapsed=129s
+06:00:42  INFO       scipy iter  840  loss=0.005497  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.610  elapsed=130s
+06:00:43  INFO       scipy iter  850  loss=0.005497  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.610  elapsed=132s
+06:00:45  INFO       scipy iter  860  loss=0.005497  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.610  elapsed=134s
+06:00:47  INFO       scipy iter  870  loss=0.009244  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.520  elapsed=135s
+06:00:48  INFO       scipy iter  880  loss=0.009244  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.520  elapsed=137s
+06:00:50  INFO       scipy iter  890  loss=0.009244  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.520  elapsed=139s
+06:00:52  INFO       scipy iter  900  loss=0.009244  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.520  elapsed=140s
+06:00:53  INFO       scipy iter  910  loss=0.005496  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.608  elapsed=142s
+06:00:55  INFO       scipy iter  920  loss=0.005496  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.608  elapsed=144s
+06:00:57  INFO       scipy iter  930  loss=0.005496  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.608  elapsed=145s
+06:00:58  INFO       scipy iter  940  loss=0.005496  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.608  elapsed=147s
+06:01:00  INFO       scipy iter  950  loss=0.008081  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.686  elapsed=149s
+06:01:02  INFO       scipy iter  960  loss=0.008081  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.686  elapsed=150s
+06:01:03  INFO       scipy iter  970  loss=0.008081  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.686  elapsed=152s
+06:01:05  INFO       scipy iter  980  loss=0.008081  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.686  elapsed=154s
+06:01:07  INFO       scipy iter  990  loss=0.005455  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.617  elapsed=155s
+06:01:08  INFO       scipy iter 1000  loss=0.005455  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.617  elapsed=157s
+06:01:10  INFO       scipy iter 1010  loss=0.005455  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.617  elapsed=159s
+06:01:12  INFO       scipy iter 1020  loss=0.005455  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.617  elapsed=160s
+06:01:13  INFO       scipy iter 1030  loss=0.007532  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.670  elapsed=162s
+06:01:15  INFO       scipy iter 1040  loss=0.007532  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.670  elapsed=164s
+06:01:17  INFO       scipy iter 1050  loss=0.007532  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.670  elapsed=165s
+06:01:18  INFO       scipy iter 1060  loss=0.007532  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.670  elapsed=167s
+06:01:20  INFO       scipy iter 1070  loss=0.005227  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.629  elapsed=169s
+06:01:22  INFO       scipy iter 1080  loss=0.005227  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.629  elapsed=170s
+06:01:23  INFO       scipy iter 1090  loss=0.005227  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.629  elapsed=172s
+06:01:25  INFO       scipy iter 1100  loss=0.005227  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.629  elapsed=174s
+06:01:27  INFO       scipy iter 1110  loss=0.008369  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.544  elapsed=175s
+06:01:28  INFO       scipy iter 1120  loss=0.008369  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.544  elapsed=177s
+06:01:30  INFO       scipy iter 1130  loss=0.008369  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.544  elapsed=179s
+06:01:32  INFO       scipy iter 1140  loss=0.008369  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.544  elapsed=180s
+06:01:33  INFO       scipy iter 1150  loss=0.004874  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.609  elapsed=182s
+06:01:35  INFO       scipy iter 1160  loss=0.004874  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.609  elapsed=184s
+06:01:37  INFO       scipy iter 1170  loss=0.004874  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.609  elapsed=185s
+06:01:38  INFO       scipy iter 1180  loss=0.004874  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.609  elapsed=187s
+06:01:40  INFO       scipy iter 1190  loss=0.004530  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.588  elapsed=189s
+06:01:42  INFO       scipy iter 1200  loss=0.004530  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.588  elapsed=191s
+06:01:43  INFO       scipy iter 1210  loss=0.004530  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.588  elapsed=192s
+06:01:45  INFO       scipy iter 1220  loss=0.004530  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.588  elapsed=194s
+06:01:47  INFO       scipy iter 1230  loss=0.004530  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.588  elapsed=196s
+06:01:49  INFO       scipy iter 1240  loss=0.004162  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.487  elapsed=197s
+06:01:50  INFO       scipy iter 1250  loss=0.004162  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.487  elapsed=199s
+06:01:52  INFO       scipy iter 1260  loss=0.004162  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.487  elapsed=201s
+06:01:54  INFO       scipy iter 1270  loss=0.004162  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.487  elapsed=202s
+06:01:55  INFO       scipy iter 1280  loss=0.003974  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.536  elapsed=204s
+06:01:57  INFO       scipy iter 1290  loss=0.003974  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.536  elapsed=206s
+06:01:59  INFO       scipy iter 1300  loss=0.003974  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.536  elapsed=207s
+06:02:00  INFO       scipy iter 1310  loss=0.003974  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.536  elapsed=209s
+06:02:02  INFO       scipy iter 1320  loss=0.003706  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.524  elapsed=211s
+06:02:04  INFO       scipy iter 1330  loss=0.003706  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.524  elapsed=212s
+06:02:05  INFO       scipy iter 1340  loss=0.003706  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.524  elapsed=214s
+06:02:07  INFO       scipy iter 1350  loss=0.003706  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.524  elapsed=216s
+06:02:09  INFO       scipy iter 1360  loss=0.003674  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.538  elapsed=217s
+06:02:10  INFO       scipy iter 1370  loss=0.003674  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.538  elapsed=219s
+06:02:12  INFO       scipy iter 1380  loss=0.003674  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.538  elapsed=221s
+06:02:14  INFO       scipy iter 1390  loss=0.003674  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.538  elapsed=222s
+06:02:15  INFO       scipy iter 1400  loss=0.003655  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.536  elapsed=224s
+06:02:17  INFO       scipy iter 1410  loss=0.003655  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.536  elapsed=226s
+06:02:19  INFO       scipy iter 1420  loss=0.003655  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.536  elapsed=228s
+06:02:20  INFO       scipy iter 1430  loss=0.003655  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.536  elapsed=229s
+06:02:22  INFO       scipy iter 1440  loss=0.003631  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.540  elapsed=231s
+06:02:24  INFO       scipy iter 1450  loss=0.003631  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.540  elapsed=233s
+06:02:26  INFO       scipy iter 1460  loss=0.003631  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.540  elapsed=234s
+06:02:27  INFO       scipy iter 1470  loss=0.003631  D_R3m=1e-17.05  D_C2m=1e-15.71  frac_R3m=0.540  elapsed=236s
+06:02:29  INFO       scipy iter 1480  loss=0.003553  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.565  elapsed=238s
+06:02:31  INFO       scipy iter 1490  loss=0.003553  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.565  elapsed=239s
+06:02:32  INFO       scipy iter 1500  loss=0.003553  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.565  elapsed=241s
+06:02:34  INFO       scipy iter 1510  loss=0.003553  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.565  elapsed=243s
+06:02:36  INFO       scipy iter 1520  loss=0.003521  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.575  elapsed=244s
+06:02:37  INFO       scipy iter 1530  loss=0.003521  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.575  elapsed=246s
+06:02:39  INFO       scipy iter 1540  loss=0.003521  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.575  elapsed=248s
+06:02:41  INFO       scipy iter 1550  loss=0.003521  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.575  elapsed=249s
+06:02:42  INFO       scipy iter 1560  loss=0.003491  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.590  elapsed=251s
+06:02:44  INFO       scipy iter 1570  loss=0.003491  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.590  elapsed=253s
+06:02:46  INFO       scipy iter 1580  loss=0.003491  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.590  elapsed=254s
+06:02:47  INFO       scipy iter 1590  loss=0.003491  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.590  elapsed=256s
+06:02:49  INFO       scipy iter 1600  loss=0.003467  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.595  elapsed=258s
+06:02:51  INFO       scipy iter 1610  loss=0.003467  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.595  elapsed=259s
+06:02:52  INFO       scipy iter 1620  loss=0.003467  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.595  elapsed=261s
+06:02:54  INFO       scipy iter 1630  loss=0.003467  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.595  elapsed=263s
+06:02:56  INFO       scipy iter 1640  loss=0.003467  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.595  elapsed=264s
+06:02:57  INFO       scipy iter 1650  loss=0.003532  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.597  elapsed=266s
+06:02:59  INFO       scipy iter 1660  loss=0.003532  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.597  elapsed=268s
+06:03:01  INFO       scipy iter 1670  loss=0.003532  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.597  elapsed=269s
+06:03:02  INFO       scipy iter 1680  loss=0.003532  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.597  elapsed=271s
+06:03:04  INFO       scipy iter 1690  loss=0.003464  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=273s
+06:03:06  INFO       scipy iter 1700  loss=0.003464  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=275s
+06:03:08  INFO       scipy iter 1710  loss=0.003464  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=276s
+06:03:09  INFO       scipy iter 1720  loss=0.003464  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=278s
+06:03:11  INFO       scipy iter 1730  loss=0.003475  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.597  elapsed=280s
+06:03:13  INFO       scipy iter 1740  loss=0.003475  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.597  elapsed=281s
+06:03:14  INFO       scipy iter 1750  loss=0.003475  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.597  elapsed=283s
+06:03:16  INFO       scipy iter 1760  loss=0.003475  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.597  elapsed=285s
+06:03:18  INFO       scipy iter 1770  loss=0.003463  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=286s
+06:03:19  INFO       scipy iter 1780  loss=0.003463  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=288s
+06:03:21  INFO       scipy iter 1790  loss=0.003463  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=290s
+06:03:23  INFO       scipy iter 1800  loss=0.003463  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=291s
+06:03:24  INFO       scipy iter 1810  loss=0.003455  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=293s
+06:03:26  INFO       scipy iter 1820  loss=0.003455  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=295s
+06:03:28  INFO       scipy iter 1830  loss=0.003455  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=296s
+06:03:29  INFO       scipy iter 1840  loss=0.003455  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.596  elapsed=298s
+06:03:31  INFO       scipy iter 1850  loss=0.003436  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.589  elapsed=300s
+06:03:33  INFO       scipy iter 1860  loss=0.003436  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.589  elapsed=301s
+06:03:34  INFO       scipy iter 1870  loss=0.003436  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.589  elapsed=303s
+06:03:36  INFO       scipy iter 1880  loss=0.003436  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.589  elapsed=305s
+06:03:38  INFO       scipy iter 1890  loss=0.003419  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.579  elapsed=306s
+06:03:39  INFO       scipy iter 1900  loss=0.003419  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.579  elapsed=308s
+06:03:41  INFO       scipy iter 1910  loss=0.003419  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.579  elapsed=310s
+06:03:43  INFO       scipy iter 1920  loss=0.003419  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.579  elapsed=311s
+06:03:44  INFO       scipy iter 1930  loss=0.003435  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.561  elapsed=313s
+06:03:46  INFO       scipy iter 1940  loss=0.003435  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.561  elapsed=315s
+06:03:48  INFO       scipy iter 1950  loss=0.003435  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.561  elapsed=316s
+06:03:49  INFO       scipy iter 1960  loss=0.003435  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.561  elapsed=318s
+06:03:51  INFO       scipy iter 1970  loss=0.003415  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.573  elapsed=320s
+06:03:53  INFO       scipy iter 1980  loss=0.003415  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.573  elapsed=322s
+06:03:54  INFO       scipy iter 1990  loss=0.003415  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.573  elapsed=323s
+06:03:56  INFO       scipy iter 2000  loss=0.003415  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.573  elapsed=325s
+06:03:58  INFO       scipy iter 2010  loss=0.003405  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.569  elapsed=327s
+06:04:00  INFO       scipy iter 2020  loss=0.003405  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.569  elapsed=328s
+06:04:01  INFO       scipy iter 2030  loss=0.003405  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.569  elapsed=330s
+06:04:03  INFO       scipy iter 2040  loss=0.003405  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.569  elapsed=332s
+06:04:05  INFO       scipy iter 2050  loss=0.003405  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.569  elapsed=333s
+06:04:06  INFO       scipy iter 2060  loss=0.003389  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.561  elapsed=335s
+06:04:08  INFO       scipy iter 2070  loss=0.003389  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.561  elapsed=337s
+06:04:10  INFO       scipy iter 2080  loss=0.003389  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.561  elapsed=338s
+06:04:11  INFO       scipy iter 2090  loss=0.003389  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.561  elapsed=340s
+06:04:13  INFO       scipy iter 2100  loss=0.003391  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.564  elapsed=342s
+06:04:15  INFO       scipy iter 2110  loss=0.003391  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.564  elapsed=343s
+06:04:16  INFO       scipy iter 2120  loss=0.003391  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.564  elapsed=345s
+06:04:18  INFO       scipy iter 2130  loss=0.003391  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.564  elapsed=347s
+06:04:20  INFO       scipy iter 2140  loss=0.003387  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.562  elapsed=348s
+06:04:21  INFO       scipy iter 2150  loss=0.003387  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.562  elapsed=350s
+06:04:23  INFO       scipy iter 2160  loss=0.003387  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.562  elapsed=352s
+06:04:25  INFO       scipy iter 2170  loss=0.003387  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.562  elapsed=353s
+06:04:26  INFO       scipy iter 2180  loss=0.003382  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.562  elapsed=355s
+06:04:28  INFO       scipy iter 2190  loss=0.003382  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.562  elapsed=357s
+06:04:30  INFO       scipy iter 2200  loss=0.003382  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.562  elapsed=358s
+06:04:31  INFO       scipy iter 2210  loss=0.003382  D_R3m=1e-17.05  D_C2m=1e-15.72  frac_R3m=0.562  elapsed=360s
+06:04:33  INFO       scipy iter 2220  loss=0.003367  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.560  elapsed=362s
+06:04:35  INFO       scipy iter 2230  loss=0.003367  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.560  elapsed=363s
+06:04:36  INFO       scipy iter 2240  loss=0.003367  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.560  elapsed=365s
+06:04:38  INFO       scipy iter 2250  loss=0.003367  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.560  elapsed=367s
+06:04:40  INFO       scipy iter 2260  loss=0.003343  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.563  elapsed=368s
+06:04:41  INFO       scipy iter 2270  loss=0.003343  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.563  elapsed=370s
+06:04:43  INFO       scipy iter 2280  loss=0.003343  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.563  elapsed=372s
+06:04:45  INFO       scipy iter 2290  loss=0.003343  D_R3m=1e-17.05  D_C2m=1e-15.73  frac_R3m=0.563  elapsed=373s
+06:04:46  INFO       scipy iter 2300  loss=0.003291  D_R3m=1e-17.05  D_C2m=1e-15.74  frac_R3m=0.564  elapsed=375s
+06:04:48  INFO       scipy iter 2310  loss=0.003291  D_R3m=1e-17.05  D_C2m=1e-15.74  frac_R3m=0.564  elapsed=377s
+06:04:50  INFO       scipy iter 2320  loss=0.003291  D_R3m=1e-17.05  D_C2m=1e-15.74  frac_R3m=0.564  elapsed=379s
+06:04:52  INFO       scipy iter 2330  loss=0.003291  D_R3m=1e-17.05  D_C2m=1e-15.74  frac_R3m=0.564  elapsed=380s
+06:04:53  INFO       scipy iter 2340  loss=0.003234  D_R3m=1e-17.05  D_C2m=1e-15.74  frac_R3m=0.577  elapsed=382s
+06:04:55  INFO       scipy iter 2350  loss=0.003234  D_R3m=1e-17.05  D_C2m=1e-15.74  frac_R3m=0.577  elapsed=384s
+06:04:57  INFO       scipy iter 2360  loss=0.003234  D_R3m=1e-17.05  D_C2m=1e-15.74  frac_R3m=0.577  elapsed=385s
+06:04:58  INFO       scipy iter 2370  loss=0.003234  D_R3m=1e-17.05  D_C2m=1e-15.74  frac_R3m=0.577  elapsed=387s
+06:05:00  INFO       scipy iter 2380  loss=0.003189  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.581  elapsed=389s
+06:05:02  INFO       scipy iter 2390  loss=0.003189  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.581  elapsed=390s
+06:05:03  INFO       scipy iter 2400  loss=0.003189  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.581  elapsed=392s
+06:05:05  INFO       scipy iter 2410  loss=0.003189  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.581  elapsed=394s
+06:05:07  INFO       scipy iter 2420  loss=0.003153  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.580  elapsed=395s
+06:05:08  INFO       scipy iter 2430  loss=0.003153  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.580  elapsed=397s
+06:05:10  INFO       scipy iter 2440  loss=0.003153  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.580  elapsed=399s
+06:05:12  INFO       scipy iter 2450  loss=0.003153  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.580  elapsed=400s
+06:05:13  INFO       scipy iter 2460  loss=0.003153  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.580  elapsed=402s
+06:05:15  INFO       scipy iter 2470  loss=0.003112  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.577  elapsed=404s
+06:05:17  INFO       scipy iter 2480  loss=0.003112  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.577  elapsed=405s
+06:05:18  INFO       scipy iter 2490  loss=0.003112  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.577  elapsed=407s
+06:05:20  INFO       scipy iter 2500  loss=0.003112  D_R3m=1e-17.05  D_C2m=1e-15.75  frac_R3m=0.577  elapsed=409s
+06:05:22  INFO       scipy iter 2510  loss=0.003088  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.577  elapsed=410s
+06:05:23  INFO       scipy iter 2520  loss=0.003088  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.577  elapsed=412s
+06:05:25  INFO       scipy iter 2530  loss=0.003088  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.577  elapsed=414s
+06:05:27  INFO       scipy iter 2540  loss=0.003088  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.577  elapsed=416s
+06:05:29  INFO       scipy iter 2550  loss=0.003070  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.577  elapsed=417s
+06:05:30  INFO       scipy iter 2560  loss=0.003070  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.577  elapsed=419s
+06:05:32  INFO       scipy iter 2570  loss=0.003070  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.577  elapsed=421s
+06:05:34  INFO       scipy iter 2580  loss=0.003070  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.577  elapsed=422s
+06:05:35  INFO       scipy iter 2590  loss=0.003047  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.580  elapsed=424s
+06:05:37  INFO       scipy iter 2600  loss=0.003047  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.580  elapsed=426s
+06:05:39  INFO       scipy iter 2610  loss=0.003047  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.580  elapsed=427s
+06:05:40  INFO       scipy iter 2620  loss=0.003047  D_R3m=1e-17.05  D_C2m=1e-15.76  frac_R3m=0.580  elapsed=429s
+06:05:42  INFO       scipy iter 2630  loss=0.002988  D_R3m=1e-17.05  D_C2m=1e-15.77  frac_R3m=0.596  elapsed=431s
+06:05:44  INFO       scipy iter 2640  loss=0.002988  D_R3m=1e-17.05  D_C2m=1e-15.77  frac_R3m=0.596  elapsed=432s
+06:05:45  INFO       scipy iter 2650  loss=0.002988  D_R3m=1e-17.05  D_C2m=1e-15.77  frac_R3m=0.596  elapsed=434s
+06:05:47  INFO       scipy iter 2660  loss=0.002988  D_R3m=1e-17.05  D_C2m=1e-15.77  frac_R3m=0.596  elapsed=436s
+06:05:49  INFO       scipy iter 2670  loss=0.002953  D_R3m=1e-17.05  D_C2m=1e-15.78  frac_R3m=0.615  elapsed=437s
+06:05:50  INFO       scipy iter 2680  loss=0.002953  D_R3m=1e-17.05  D_C2m=1e-15.78  frac_R3m=0.615  elapsed=439s
+06:05:52  INFO       scipy iter 2690  loss=0.002953  D_R3m=1e-17.05  D_C2m=1e-15.78  frac_R3m=0.615  elapsed=441s
+06:05:54  INFO       scipy iter 2700  loss=0.002953  D_R3m=1e-17.05  D_C2m=1e-15.78  frac_R3m=0.615  elapsed=442s
+06:05:55  INFO       scipy iter 2710  loss=0.002918  D_R3m=1e-17.05  D_C2m=1e-15.80  frac_R3m=0.652  elapsed=444s
+06:05:57  INFO       scipy iter 2720  loss=0.002918  D_R3m=1e-17.05  D_C2m=1e-15.80  frac_R3m=0.652  elapsed=446s
+06:05:59  INFO       scipy iter 2730  loss=0.002918  D_R3m=1e-17.05  D_C2m=1e-15.80  frac_R3m=0.652  elapsed=447s
+06:06:00  INFO       scipy iter 2740  loss=0.002918  D_R3m=1e-17.05  D_C2m=1e-15.80  frac_R3m=0.652  elapsed=449s
+06:06:02  INFO       scipy iter 2750  loss=0.003086  D_R3m=1e-17.05  D_C2m=1e-15.81  frac_R3m=0.693  elapsed=451s
+06:06:04  INFO       scipy iter 2760  loss=0.003086  D_R3m=1e-17.05  D_C2m=1e-15.81  frac_R3m=0.693  elapsed=452s
+06:06:05  INFO       scipy iter 2770  loss=0.003086  D_R3m=1e-17.05  D_C2m=1e-15.81  frac_R3m=0.693  elapsed=454s
+06:06:07  INFO       scipy iter 2780  loss=0.003086  D_R3m=1e-17.05  D_C2m=1e-15.81  frac_R3m=0.693  elapsed=456s
+06:06:09  INFO       scipy iter 2790  loss=0.002894  D_R3m=1e-17.05  D_C2m=1e-15.80  frac_R3m=0.663  elapsed=457s
+06:06:10  INFO       scipy iter 2800  loss=0.002894  D_R3m=1e-17.05  D_C2m=1e-15.80  frac_R3m=0.663  elapsed=459s
+06:06:12  INFO       scipy iter 2810  loss=0.002894  D_R3m=1e-17.05  D_C2m=1e-15.80  frac_R3m=0.663  elapsed=461s
+06:06:14  INFO       scipy iter 2820  loss=0.002894  D_R3m=1e-17.05  D_C2m=1e-15.80  frac_R3m=0.663  elapsed=462s
+06:06:15  INFO       scipy iter 2830  loss=0.002849  D_R3m=1e-17.05  D_C2m=1e-15.81  frac_R3m=0.676  elapsed=464s
+06:06:17  INFO       scipy iter 2840  loss=0.002849  D_R3m=1e-17.05  D_C2m=1e-15.81  frac_R3m=0.676  elapsed=466s
+06:06:19  INFO       scipy iter 2850  loss=0.002849  D_R3m=1e-17.05  D_C2m=1e-15.81  frac_R3m=0.676  elapsed=467s
+06:06:20  INFO       scipy iter 2860  loss=0.002849  D_R3m=1e-17.05  D_C2m=1e-15.81  frac_R3m=0.676  elapsed=469s
+06:06:22  INFO       scipy iter 2870  loss=0.002849  D_R3m=1e-17.05  D_C2m=1e-15.81  frac_R3m=0.676  elapsed=471s
+06:06:24  INFO       scipy iter 2880  loss=0.002794  D_R3m=1e-17.06  D_C2m=1e-15.82  frac_R3m=0.697  elapsed=473s
+06:06:25  INFO       scipy iter 2890  loss=0.002794  D_R3m=1e-17.06  D_C2m=1e-15.82  frac_R3m=0.697  elapsed=474s
+06:06:27  INFO       scipy iter 2900  loss=0.002794  D_R3m=1e-17.06  D_C2m=1e-15.82  frac_R3m=0.697  elapsed=476s
+06:06:29  INFO       scipy iter 2910  loss=0.002794  D_R3m=1e-17.06  D_C2m=1e-15.82  frac_R3m=0.697  elapsed=478s
+06:06:31  INFO       scipy iter 2920  loss=0.003159  D_R3m=1e-17.06  D_C2m=1e-15.86  frac_R3m=0.768  elapsed=479s
+06:06:32  INFO       scipy iter 2930  loss=0.003159  D_R3m=1e-17.06  D_C2m=1e-15.86  frac_R3m=0.768  elapsed=481s
+06:06:34  INFO       scipy iter 2940  loss=0.003159  D_R3m=1e-17.06  D_C2m=1e-15.86  frac_R3m=0.768  elapsed=483s
+06:06:36  INFO       scipy iter 2950  loss=0.003159  D_R3m=1e-17.06  D_C2m=1e-15.86  frac_R3m=0.768  elapsed=484s
+06:06:37  INFO       scipy iter 2960  loss=0.002782  D_R3m=1e-17.06  D_C2m=1e-15.83  frac_R3m=0.712  elapsed=486s
+06:06:39  INFO       scipy iter 2970  loss=0.002782  D_R3m=1e-17.06  D_C2m=1e-15.83  frac_R3m=0.712  elapsed=488s
+06:06:41  INFO       scipy iter 2980  loss=0.002782  D_R3m=1e-17.06  D_C2m=1e-15.83  frac_R3m=0.712  elapsed=489s
+06:06:42  INFO       scipy iter 2990  loss=0.002782  D_R3m=1e-17.06  D_C2m=1e-15.83  frac_R3m=0.712  elapsed=491s
+06:06:44  INFO       scipy iter 3000  loss=0.003358  D_R3m=1e-17.06  D_C2m=1e-15.89  frac_R3m=0.824  elapsed=493s
+06:06:46  INFO       scipy iter 3010  loss=0.003358  D_R3m=1e-17.06  D_C2m=1e-15.89  frac_R3m=0.824  elapsed=494s
+06:06:47  INFO       scipy iter 3020  loss=0.003358  D_R3m=1e-17.06  D_C2m=1e-15.89  frac_R3m=0.824  elapsed=496s
+06:06:49  INFO       scipy iter 3030  loss=0.003358  D_R3m=1e-17.06  D_C2m=1e-15.89  frac_R3m=0.824  elapsed=498s
+06:06:51  INFO       scipy iter 3040  loss=0.002781  D_R3m=1e-17.06  D_C2m=1e-15.83  frac_R3m=0.721  elapsed=499s
+06:06:52  INFO       scipy iter 3050  loss=0.002781  D_R3m=1e-17.06  D_C2m=1e-15.83  frac_R3m=0.721  elapsed=501s
+06:06:54  INFO       scipy iter 3060  loss=0.002781  D_R3m=1e-17.06  D_C2m=1e-15.83  frac_R3m=0.721  elapsed=503s
+06:06:56  INFO       scipy iter 3070  loss=0.002781  D_R3m=1e-17.06  D_C2m=1e-15.83  frac_R3m=0.721  elapsed=504s
+06:06:57  INFO       scipy iter 3080  loss=0.002892  D_R3m=1e-17.06  D_C2m=1e-15.85  frac_R3m=0.749  elapsed=506s
+06:06:59  INFO       scipy iter 3090  loss=0.002892  D_R3m=1e-17.06  D_C2m=1e-15.85  frac_R3m=0.749  elapsed=508s
+06:07:01  INFO       scipy iter 3100  loss=0.002892  D_R3m=1e-17.06  D_C2m=1e-15.85  frac_R3m=0.749  elapsed=509s
+06:07:02  INFO       scipy iter 3110  loss=0.002892  D_R3m=1e-17.06  D_C2m=1e-15.85  frac_R3m=0.749  elapsed=511s
+06:07:04  INFO       scipy iter 3120  loss=0.002769  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.729  elapsed=513s
+06:07:06  INFO       scipy iter 3130  loss=0.002769  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.729  elapsed=515s
+06:07:07  INFO       scipy iter 3140  loss=0.002769  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.729  elapsed=516s
+06:07:09  INFO       scipy iter 3150  loss=0.002769  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.729  elapsed=518s
+06:07:11  INFO       scipy iter 3160  loss=0.002940  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.725  elapsed=520s
+06:07:13  INFO       scipy iter 3170  loss=0.002940  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.725  elapsed=521s
+06:07:14  INFO       scipy iter 3180  loss=0.002940  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.725  elapsed=523s
+06:07:16  INFO       scipy iter 3190  loss=0.002940  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.725  elapsed=525s
+06:07:18  INFO       scipy iter 3200  loss=0.002736  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.728  elapsed=526s
+06:07:19  INFO       scipy iter 3210  loss=0.002736  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.728  elapsed=528s
+06:07:21  INFO       scipy iter 3220  loss=0.002736  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.728  elapsed=530s
+06:07:23  INFO       scipy iter 3230  loss=0.002736  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.728  elapsed=531s
+06:07:24  INFO       scipy iter 3240  loss=0.002712  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.734  elapsed=533s
+06:07:26  INFO       scipy iter 3250  loss=0.002712  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.734  elapsed=535s
+06:07:28  INFO       scipy iter 3260  loss=0.002712  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.734  elapsed=536s
+06:07:29  INFO       scipy iter 3270  loss=0.002712  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.734  elapsed=538s
+06:07:31  INFO       scipy iter 3280  loss=0.002712  D_R3m=1e-17.06  D_C2m=1e-15.84  frac_R3m=0.734  elapsed=540s
+06:07:33  INFO       scipy iter 3290  loss=0.002666  D_R3m=1e-17.06  D_C2m=1e-15.88  frac_R3m=0.765  elapsed=541s
+06:07:34  INFO       scipy iter 3300  loss=0.002666  D_R3m=1e-17.06  D_C2m=1e-15.88  frac_R3m=0.765  elapsed=543s
+06:07:36  INFO       scipy iter 3310  loss=0.002666  D_R3m=1e-17.06  D_C2m=1e-15.88  frac_R3m=0.765  elapsed=545s
+06:07:38  INFO       scipy iter 3320  loss=0.002666  D_R3m=1e-17.06  D_C2m=1e-15.88  frac_R3m=0.765  elapsed=546s
+06:07:39  INFO       scipy iter 3330  loss=0.002631  D_R3m=1e-17.06  D_C2m=1e-15.89  frac_R3m=0.766  elapsed=548s
+06:07:41  INFO       scipy iter 3340  loss=0.002631  D_R3m=1e-17.06  D_C2m=1e-15.89  frac_R3m=0.766  elapsed=550s
+06:07:43  INFO       scipy iter 3350  loss=0.002631  D_R3m=1e-17.06  D_C2m=1e-15.89  frac_R3m=0.766  elapsed=551s
+06:07:44  INFO       scipy iter 3360  loss=0.002631  D_R3m=1e-17.06  D_C2m=1e-15.89  frac_R3m=0.766  elapsed=553s
+06:07:46  INFO       scipy iter 3370  loss=0.002593  D_R3m=1e-17.06  D_C2m=1e-15.90  frac_R3m=0.773  elapsed=555s
+06:07:48  INFO       scipy iter 3380  loss=0.002593  D_R3m=1e-17.06  D_C2m=1e-15.90  frac_R3m=0.773  elapsed=557s
+06:07:50  INFO       scipy iter 3390  loss=0.002593  D_R3m=1e-17.06  D_C2m=1e-15.90  frac_R3m=0.773  elapsed=558s
+06:07:51  INFO       scipy iter 3400  loss=0.002593  D_R3m=1e-17.06  D_C2m=1e-15.90  frac_R3m=0.773  elapsed=560s
+06:07:53  INFO       scipy iter 3410  loss=0.002567  D_R3m=1e-17.06  D_C2m=1e-15.91  frac_R3m=0.783  elapsed=562s
+06:07:55  INFO       scipy iter 3420  loss=0.002567  D_R3m=1e-17.06  D_C2m=1e-15.91  frac_R3m=0.783  elapsed=563s
+06:07:56  INFO       scipy iter 3430  loss=0.002567  D_R3m=1e-17.06  D_C2m=1e-15.91  frac_R3m=0.783  elapsed=565s
+06:07:58  INFO       scipy iter 3440  loss=0.002567  D_R3m=1e-17.06  D_C2m=1e-15.91  frac_R3m=0.783  elapsed=567s
+06:08:00  INFO       scipy iter 3450  loss=0.002546  D_R3m=1e-17.06  D_C2m=1e-15.93  frac_R3m=0.791  elapsed=568s
+06:08:01  INFO       scipy iter 3460  loss=0.002546  D_R3m=1e-17.06  D_C2m=1e-15.93  frac_R3m=0.791  elapsed=570s
+06:08:03  INFO       scipy iter 3470  loss=0.002546  D_R3m=1e-17.06  D_C2m=1e-15.93  frac_R3m=0.791  elapsed=572s
+06:08:05  INFO       scipy iter 3480  loss=0.002546  D_R3m=1e-17.06  D_C2m=1e-15.93  frac_R3m=0.791  elapsed=573s
+06:08:06  INFO       scipy iter 3490  loss=0.002507  D_R3m=1e-17.07  D_C2m=1e-15.95  frac_R3m=0.794  elapsed=575s
+06:08:08  INFO       scipy iter 3500  loss=0.002507  D_R3m=1e-17.07  D_C2m=1e-15.95  frac_R3m=0.794  elapsed=577s
+06:08:10  INFO       scipy iter 3510  loss=0.002507  D_R3m=1e-17.07  D_C2m=1e-15.95  frac_R3m=0.794  elapsed=578s
+06:08:11  INFO       scipy iter 3520  loss=0.002507  D_R3m=1e-17.07  D_C2m=1e-15.95  frac_R3m=0.794  elapsed=580s
+06:08:13  INFO       scipy iter 3530  loss=0.002506  D_R3m=1e-17.07  D_C2m=1e-15.98  frac_R3m=0.809  elapsed=582s
+06:08:15  INFO       scipy iter 3540  loss=0.002506  D_R3m=1e-17.07  D_C2m=1e-15.98  frac_R3m=0.809  elapsed=583s
+06:08:16  INFO       scipy iter 3550  loss=0.002506  D_R3m=1e-17.07  D_C2m=1e-15.98  frac_R3m=0.809  elapsed=585s
+06:08:18  INFO       scipy iter 3560  loss=0.002506  D_R3m=1e-17.07  D_C2m=1e-15.98  frac_R3m=0.809  elapsed=587s
+06:08:20  INFO       scipy iter 3570  loss=0.002490  D_R3m=1e-17.07  D_C2m=1e-15.96  frac_R3m=0.801  elapsed=588s
+06:08:21  INFO       scipy iter 3580  loss=0.002490  D_R3m=1e-17.07  D_C2m=1e-15.96  frac_R3m=0.801  elapsed=590s
+06:08:23  INFO       scipy iter 3590  loss=0.002490  D_R3m=1e-17.07  D_C2m=1e-15.96  frac_R3m=0.801  elapsed=592s
+06:08:25  INFO       scipy iter 3600  loss=0.002490  D_R3m=1e-17.07  D_C2m=1e-15.96  frac_R3m=0.801  elapsed=593s
+06:08:26  INFO       scipy iter 3610  loss=0.002421  D_R3m=1e-17.07  D_C2m=1e-15.97  frac_R3m=0.796  elapsed=595s
+06:08:28  INFO       scipy iter 3620  loss=0.002421  D_R3m=1e-17.07  D_C2m=1e-15.97  frac_R3m=0.796  elapsed=597s
+06:08:30  INFO       scipy iter 3630  loss=0.002421  D_R3m=1e-17.07  D_C2m=1e-15.97  frac_R3m=0.796  elapsed=598s
+06:08:31  INFO       scipy iter 3640  loss=0.002421  D_R3m=1e-17.07  D_C2m=1e-15.97  frac_R3m=0.796  elapsed=600s
+06:08:33  INFO       scipy iter 3650  loss=0.001964  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.727  elapsed=602s
+06:08:35  INFO       scipy iter 3660  loss=0.001964  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.727  elapsed=603s
+06:08:36  INFO       scipy iter 3670  loss=0.001964  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.727  elapsed=605s
+06:08:38  INFO       scipy iter 3680  loss=0.001964  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.727  elapsed=607s
+06:08:40  INFO       scipy iter 3690  loss=0.001964  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.727  elapsed=609s
+06:08:41  INFO       scipy iter 3700  loss=0.001887  D_R3m=1e-17.07  D_C2m=1e-16.00  frac_R3m=0.692  elapsed=610s
+06:08:43  INFO       scipy iter 3710  loss=0.001887  D_R3m=1e-17.07  D_C2m=1e-16.00  frac_R3m=0.692  elapsed=612s
+06:08:45  INFO       scipy iter 3720  loss=0.001887  D_R3m=1e-17.07  D_C2m=1e-16.00  frac_R3m=0.692  elapsed=614s
+06:08:47  INFO       scipy iter 3730  loss=0.001887  D_R3m=1e-17.07  D_C2m=1e-16.00  frac_R3m=0.692  elapsed=615s
+06:08:48  INFO       scipy iter 3740  loss=0.001562  D_R3m=1e-17.08  D_C2m=1e-16.02  frac_R3m=0.698  elapsed=617s
+06:08:50  INFO       scipy iter 3750  loss=0.001562  D_R3m=1e-17.08  D_C2m=1e-16.02  frac_R3m=0.698  elapsed=619s
+06:08:52  INFO       scipy iter 3760  loss=0.001562  D_R3m=1e-17.08  D_C2m=1e-16.02  frac_R3m=0.698  elapsed=620s
+06:08:53  INFO       scipy iter 3770  loss=0.001562  D_R3m=1e-17.08  D_C2m=1e-16.02  frac_R3m=0.698  elapsed=622s
+06:08:55  INFO       scipy iter 3780  loss=0.001360  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.685  elapsed=624s
+06:08:57  INFO       scipy iter 3790  loss=0.001360  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.685  elapsed=625s
+06:08:58  INFO       scipy iter 3800  loss=0.001360  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.685  elapsed=627s
+06:09:00  INFO       scipy iter 3810  loss=0.001360  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.685  elapsed=629s
+06:09:02  INFO       scipy iter 3820  loss=0.001210  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.671  elapsed=630s
+06:09:03  INFO       scipy iter 3830  loss=0.001210  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.671  elapsed=632s
+06:09:05  INFO       scipy iter 3840  loss=0.001210  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.671  elapsed=634s
+06:09:07  INFO       scipy iter 3850  loss=0.001210  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.671  elapsed=635s
+06:09:08  INFO       scipy iter 3860  loss=0.001166  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.640  elapsed=637s
+06:09:10  INFO       scipy iter 3870  loss=0.001166  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.640  elapsed=639s
+06:09:12  INFO       scipy iter 3880  loss=0.001166  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.640  elapsed=640s
+06:09:13  INFO       scipy iter 3890  loss=0.001166  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.640  elapsed=642s
+06:09:15  INFO       scipy iter 3900  loss=0.001109  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.657  elapsed=644s
+06:09:17  INFO       scipy iter 3910  loss=0.001109  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.657  elapsed=645s
+06:09:18  INFO       scipy iter 3920  loss=0.001109  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.657  elapsed=647s
+06:09:20  INFO       scipy iter 3930  loss=0.001109  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.657  elapsed=649s
+06:09:22  INFO       scipy iter 3940  loss=0.001098  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.661  elapsed=650s
+06:09:23  INFO       scipy iter 3950  loss=0.001098  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.661  elapsed=652s
+06:09:25  INFO       scipy iter 3960  loss=0.001098  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.661  elapsed=654s
+06:09:27  INFO       scipy iter 3970  loss=0.001098  D_R3m=1e-17.08  D_C2m=1e-16.05  frac_R3m=0.661  elapsed=655s
+06:09:28  INFO       scipy iter 3980  loss=0.001090  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.667  elapsed=657s
+06:09:30  INFO       scipy iter 3990  loss=0.001090  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.667  elapsed=659s
+06:09:32  INFO       scipy iter 4000  loss=0.001090  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.667  elapsed=660s
+06:09:33  INFO       scipy iter 4010  loss=0.001090  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.667  elapsed=662s
+06:09:35  INFO       scipy iter 4020  loss=0.001083  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.671  elapsed=664s
+06:09:37  INFO       scipy iter 4030  loss=0.001083  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.671  elapsed=665s
+06:09:38  INFO       scipy iter 4040  loss=0.001083  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.671  elapsed=667s
+06:09:40  INFO       scipy iter 4050  loss=0.001083  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.671  elapsed=669s
+06:09:42  INFO       scipy iter 4060  loss=0.001076  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.677  elapsed=671s
+06:09:44  INFO       scipy iter 4070  loss=0.001076  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.677  elapsed=672s
+06:09:45  INFO       scipy iter 4080  loss=0.001076  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.677  elapsed=674s
+06:09:47  INFO       scipy iter 4090  loss=0.001076  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.677  elapsed=676s
+06:09:49  INFO       scipy iter 4100  loss=0.001076  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.677  elapsed=677s
+06:09:50  INFO       scipy iter 4110  loss=0.001069  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.681  elapsed=679s
+06:09:52  INFO       scipy iter 4120  loss=0.001069  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.681  elapsed=681s
+06:09:54  INFO       scipy iter 4130  loss=0.001069  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.681  elapsed=682s
+06:09:55  INFO       scipy iter 4140  loss=0.001069  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.681  elapsed=684s
+06:09:57  INFO       scipy iter 4150  loss=0.001063  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.683  elapsed=686s
+06:09:59  INFO       scipy iter 4160  loss=0.001063  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.683  elapsed=687s
+06:10:00  INFO       scipy iter 4170  loss=0.001063  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.683  elapsed=689s
+06:10:02  INFO       scipy iter 4180  loss=0.001063  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.683  elapsed=691s
+06:10:04  INFO       scipy iter 4190  loss=0.001058  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.683  elapsed=692s
+06:10:05  INFO       scipy iter 4200  loss=0.001058  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.683  elapsed=694s
+06:10:07  INFO       scipy iter 4210  loss=0.001058  D_R3m=1e-17.08  D_C2m=1e-16.06  frac_R3m=0.683  elapsed=696s

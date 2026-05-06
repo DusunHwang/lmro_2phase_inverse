@@ -1,0 +1,77 @@
+{
+  "simulation_model": "PyBaMM DFN (half-cell, working_electrode=positive)",
+  "fit_target_model": "PyBaMM SPMe (half-cell)",
+  "phase_mapping": {
+    "Primary": "R3m (\uace0\uc804\uc555 \uce35\uc0c1)",
+    "Secondary": "C2m (\uc800\uc804\uc555 \ub2e8\uc0ac\uc815\uacc4)"
+  },
+  "truth": {
+    "frac_R3m": 0.4,
+    "frac_C2m": 0.6,
+    "D_R3m_m2_s": 5e-17,
+    "D_C2m_m2_s": 5e-19,
+    "log10_D_R3m": -16.30102999566398,
+    "log10_D_C2m": -18.30102999566398,
+    "R_R3m_m": 1.5e-07,
+    "R_C2m_m": 1.5e-07,
+    "log10_R_R3m": -6.823908740944319,
+    "log10_R_C2m": -6.823908740944319
+  },
+  "ocp": {
+    "type": "Gaussian dQ/dV",
+    "R3m_center_v": 3.7,
+    "R3m_sigma_v": 0.1,
+    "C2m_center_v": 3.2,
+    "C2m_sigma_v": 0.15
+  },
+  "protocol": {
+    "c_rates": [
+      0.1,
+      0.33,
+      0.5,
+      1.0
+    ],
+    "voltage_lower_v": 2.5,
+    "voltage_upper_v": 4.65,
+    "period_s": 0.5,
+    "rest_min": 10.0,
+    "initial_fraction": 0.99
+  },
+  "literature_note": "R3m D~10\u207b\u00b9\u00b2~10\u207b\u00b9\u00b3 cm\u00b2/s=10\u207b\u00b9\u2076~10\u207b\u00b9\u2077 m\u00b2/s; C2m D~10\u207b\u00b9\u2074~10\u207b\u00b9\u2075 cm\u00b2/s=10\u207b\u00b9\u2078~10\u207b\u00b9\u2079 m\u00b2/s; R3m OCP peak~3.7V, C2m OCP peak~3.2V (\ubc29\uc804 \uae30\uc900)",
+  "target_peaks": {
+    "R3m_primary_redox_feature_v": 3.7,
+    "R3m_sigma_v": 0.1,
+    "C2m_secondary_redox_feature_v": 3.2,
+    "C2m_sigma_v": 0.15
+  },
+  "cycle_summaries": [
+    {
+      "cycle": 1,
+      "c_rate": 0.1,
+      "v_min": 2.500010000000002,
+      "v_max": 4.649989999999999,
+      "n_pts": 135358
+    },
+    {
+      "cycle": 2,
+      "c_rate": 0.33,
+      "v_min": 2.500009999999999,
+      "v_max": 4.649990000000001,
+      "n_pts": 36264
+    },
+    {
+      "cycle": 3,
+      "c_rate": 0.5,
+      "v_min": 2.500009999999999,
+      "v_max": 4.649990000000002,
+      "n_pts": 22449
+    },
+    {
+      "cycle": 4,
+      "c_rate": 1.0,
+      "v_min": 2.500010000000001,
+      "v_max": 4.649990000000001,
+      "n_pts": 10712
+    }
+  ]
+}
