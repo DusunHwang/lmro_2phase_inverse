@@ -535,7 +535,10 @@ def compute_loss_threaded_cycles(v_vec: np.ndarray,
 # ─── Optuna 탐색 ──────────────────────────────────────────────────────────────
 
 def run_optuna(gen, fit_model, cycles_data, monitor, n_trials, seed, out_dir,
-               n_jobs: int = 1, cycle_workers: int = 1) -> np.ndarray:
+               n_jobs: int = 1, cycle_workers: int = 1,
+               early_stop_loss: float = 0.0,
+               early_stop_patience: int = 0,
+               early_stop_min_delta: float = 0.0) -> np.ndarray:
     """Optuna 탐색.
 
     n_jobs > 1: 각 trial을 별도 스레드에서 실행 (joblib prefer='threads').
@@ -553,6 +556,14 @@ def run_optuna(gen, fit_model, cycles_data, monitor, n_trials, seed, out_dir,
         print(f"  Optuna 스레드 병렬: {n_jobs} workers  (TPE batch mode)", flush=True)
     if cycle_workers > 1:
         print(f"  Optuna trial 내부 C-rate 병렬: {cycle_workers} workers", flush=True)
+    if early_stop_loss > 0:
+        print(f"  Optuna early stop loss: best loss <= {early_stop_loss:g}", flush=True)
+    if early_stop_patience > 0:
+        print(
+            "  Optuna early stop patience: "
+            f"{early_stop_patience} trials without improvement >= {early_stop_min_delta:g}",
+            flush=True,
+        )
 
     def objective(trial):
         v = np.array([trial.suggest_float(k, lo, hi) for k, lo, hi, _ in PARAM_DEFS])
@@ -571,7 +582,44 @@ def run_optuna(gen, fit_model, cycles_data, monitor, n_trials, seed, out_dir,
         direction="minimize",
         sampler=optuna.samplers.TPESampler(seed=seed),
     )
-    study.optimize(objective, n_trials=n_trials, n_jobs=n_jobs)
+
+    best_seen = {"value": float("inf"), "no_improve": 0}
+    early_stop_lock = threading.Lock()
+
+    def early_stop_callback(study, trial):
+        with early_stop_lock:
+            best_value = float(study.best_value)
+            if early_stop_loss > 0 and best_value <= early_stop_loss:
+                print(
+                    f"  Optuna early stop: best loss {best_value:.6g} <= "
+                    f"{early_stop_loss:.6g}",
+                    flush=True,
+                )
+                study.stop()
+                return
+
+            if early_stop_patience <= 0:
+                return
+
+            improved = best_value < best_seen["value"] - max(0.0, early_stop_min_delta)
+            if improved:
+                best_seen["value"] = best_value
+                best_seen["no_improve"] = 0
+                return
+
+            best_seen["no_improve"] += 1
+            if best_seen["no_improve"] >= early_stop_patience:
+                print(
+                    "  Optuna early stop: "
+                    f"{best_seen['no_improve']} completed trials without improvement >= "
+                    f"{early_stop_min_delta:g} "
+                    f"(best loss={best_seen['value']:.6g})",
+                    flush=True,
+                )
+                study.stop()
+
+    callbacks = [early_stop_callback] if early_stop_loss > 0 or early_stop_patience > 0 else None
+    study.optimize(objective, n_trials=n_trials, n_jobs=n_jobs, callbacks=callbacks)
     best = study.best_trial
     return np.array([best.params[k] for k in PARAM_KEYS])
 
@@ -700,6 +748,11 @@ def main(args):
         "branch_points_per_charge_discharge": int(args.branch_points),
         "n_optuna": int(args.n_optuna),
         "n_scipy": int(args.n_scipy),
+        "optuna_early_stop": {
+            "loss_threshold": float(args.early_stop_loss),
+            "patience_trials": int(args.early_stop_patience),
+            "min_delta": float(args.early_stop_min_delta),
+        },
         "fit_model": FIT_MODEL_TYPE,
         "loss_weights": {
             "Vt_MSE": LOSS_W_VT,
@@ -782,7 +835,10 @@ def main(args):
         best_optuna = run_optuna(gen, fit_model, cycles_data,
                                   monitor, args.n_optuna, args.seed, out_dir,
                                   n_jobs=args.n_jobs,
-                                  cycle_workers=optuna_cycle_workers)
+                                  cycle_workers=optuna_cycle_workers,
+                                  early_stop_loss=args.early_stop_loss,
+                                  early_stop_patience=args.early_stop_patience,
+                                  early_stop_min_delta=args.early_stop_min_delta)
         best_final  = run_scipy(best_optuna, gen, fit_model, cycles_data,
                                  monitor, args.n_scipy, out_dir)
         save_results(best_final, monitor, args.true_params, out_dir)
@@ -826,6 +882,18 @@ if __name__ == "__main__":
     parser.add_argument("--n-optuna",  type=int, default=80)
     parser.add_argument("--n-scipy",   type=int, default=500)
     parser.add_argument("--seed",      type=int, default=42)
+    parser.add_argument(
+        "--early-stop-loss", type=float, default=0.0,
+        help="Optuna best loss가 이 값 이하가 되면 중지. 0이면 비활성화",
+    )
+    parser.add_argument(
+        "--early-stop-patience", type=int, default=0,
+        help="Optuna best loss 개선이 없는 trial 수. 0이면 patience 중지 비활성화",
+    )
+    parser.add_argument(
+        "--early-stop-min-delta", type=float, default=0.0,
+        help="patience 판단 시 개선으로 인정할 최소 loss 감소량",
+    )
     parser.add_argument(
         "--n-jobs", type=int, default=1,
         help="Optuna 병렬 스레드 수 (trial 동시 실행). 1=순차, 20=최대 활용",
