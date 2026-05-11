@@ -156,8 +156,10 @@ def _discharge_vq(time_s, voltage_v, current_a, n_grid=300):
 def _select_milestones(hist_path: Path) -> list[dict]:
     """Optuna 1회, 25%, 50%, 100% 지점의 최우수 파라미터 선택."""
     records  = [json.loads(l) for l in hist_path.read_text().splitlines() if l.strip()]
-    optuna   = [r for r in records if r["type"] == "optuna"]
+    optuna   = [r for r in records if str(r.get("type", "")).startswith("optuna")]
     n        = len(optuna)
+    if n == 0:
+        return []
     cuts     = [1, max(2, n // 4), max(3, n // 2), n]
     labels   = ["Optuna #1", f"Optuna ~25% (n={cuts[1]})",
                 f"Optuna ~50% (n={cuts[2]})", f"Optuna 완료 (n={n})"]

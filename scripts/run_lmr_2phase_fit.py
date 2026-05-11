@@ -65,17 +65,17 @@ def _load_gen():
 
 PARAM_DEFS = [
     # (key, lo, hi, description)
-    ("frac_R3m",         0.10,  0.90,  "R3m 활물질 분율"),
+    ("frac_R3m",         0.15,  0.85,  "R3m 활물질 분율"),
     ("log10_D_R3m",     -18.0, -15.0,  "R3m log10 D [m²/s]  (문헌: -17~-16)"),
-    ("log10_R_R3m",      -7.5,  -5.5,  "R3m log10 입자반경 [m]"),
-    ("log10_D_C2m",     -20.0, -17.0,  "C2m log10 D [m²/s]  (문헌: -19~-18)"),
-    ("log10_R_C2m",      -7.5,  -5.5,  "C2m log10 입자반경 [m]"),
+    ("log10_R_R3m",      -7.5,  -5.8,  "R3m log10 입자반경 [m]"),
+    ("log10_D_C2m",     -19.5, -17.0,  "C2m log10 D [m²/s]  (문헌: -19~-18)"),
+    ("log10_R_C2m",      -7.5,  -6.0,  "C2m log10 입자반경 [m]"),
     # 전압 범위를 R3m(고전압)/C2m(저전압)으로 분리하여 위상 swap 방지
-    ("R3m_center_v",     3.40,  4.30,  "R3m OCP Gaussian 중심 [V]  (문헌: 3.6~3.8V)"),
-    ("R3m_sigma_v",      0.03,  0.45,  "R3m OCP Gaussian σ [V]"),
-    ("C2m_center_v",     2.60,  3.30,  "C2m OCP Gaussian 중심 [V]  (문헌: 3.2~3.3V)"),
-    ("C2m_sigma_v",      0.05,  0.50,  "C2m OCP Gaussian σ [V]"),
-    ("log10_contact_R", -5.00, -1.00,  "log10 접촉저항 [Ω·m²]"),
+    ("R3m_center_v",     3.40,  4.00,  "R3m OCP Gaussian 중심 [V]  (문헌: 3.6~3.8V)"),
+    ("R3m_sigma_v",      0.06,  0.50,  "R3m OCP Gaussian σ [V]"),
+    ("C2m_center_v",     2.90,  3.35,  "C2m OCP Gaussian 중심 [V]  (문헌: 3.2~3.3V)"),
+    ("C2m_sigma_v",      0.07,  0.55,  "C2m OCP Gaussian σ [V]"),
+    ("log10_contact_R", -4.50, -1.20,  "log10 접촉저항 [Ω·m²]"),
 ]
 
 PARAM_KEYS = [d[0] for d in PARAM_DEFS]
@@ -115,6 +115,110 @@ def _build_fit_model():
     if FIT_MODEL_TYPE == "DFN":
         return pybamm.lithium_ion.DFN(SPME_OPTIONS)
     return pybamm.lithium_ion.SPMe(SPME_OPTIONS)
+
+
+def _clip_trial_params(params: dict, param_defs: list[tuple] | None = None) -> dict:
+    defs = param_defs or PARAM_DEFS
+    clipped = {}
+    for key, lo, hi, _desc in defs:
+        value = params.get(key)
+        if value is None:
+            continue
+        clipped[key] = float(np.clip(float(value), lo, hi))
+    return clipped
+
+
+def _unique_complete_trials(trials: list[dict], param_defs: list[tuple] | None = None) -> list[dict]:
+    out: list[dict] = []
+    seen: set[tuple] = set()
+    for trial in trials:
+        clipped = _clip_trial_params(trial, param_defs)
+        if any(key not in clipped for key in PARAM_KEYS):
+            continue
+        sig = tuple(round(clipped[key], 10) for key in PARAM_KEYS)
+        if sig in seen:
+            continue
+        seen.add(sig)
+        out.append(clipped)
+    return out
+
+
+def _param_bounds_dict(param_defs: list[tuple]) -> dict:
+    return {
+        key: {"low": lo, "high": hi, "description": desc}
+        for key, lo, hi, desc in param_defs
+    }
+
+
+def _derive_dynamic_param_defs(
+    trials,
+    base_defs: list[tuple],
+    penalty_threshold: float,
+    top_fraction: float,
+    margin_fraction: float,
+    min_width_fraction: float = 0.12,
+) -> tuple[list[tuple], dict]:
+    valid = [
+        t for t in trials
+        if t.value is not None
+        and np.isfinite(float(t.value))
+        and float(t.value) < penalty_threshold
+    ]
+    valid.sort(key=lambda t: float(t.value))
+    if len(valid) < 3:
+        return base_defs, {
+            "enabled": False,
+            "reason": "not_enough_valid_trials",
+            "valid_trials": len(valid),
+        }
+
+    n_top = max(3, int(np.ceil(len(valid) * float(top_fraction))))
+    top = valid[:n_top]
+    narrowed = []
+    details = {
+        "enabled": True,
+        "valid_trials": len(valid),
+        "top_trials": len(top),
+        "penalty_threshold": penalty_threshold,
+        "top_fraction": top_fraction,
+        "margin_fraction": margin_fraction,
+        "bounds": {},
+    }
+
+    for key, lo, hi, desc in base_defs:
+        vals = np.array([float(t.params[key]) for t in top if key in t.params], dtype=float)
+        if len(vals) == 0:
+            narrowed.append((key, lo, hi, desc))
+            continue
+
+        span = hi - lo
+        best_center = float(valid[0].params[key])
+        v_lo = float(np.min(vals))
+        v_hi = float(np.max(vals))
+        std = float(np.std(vals)) if len(vals) > 1 else 0.0
+        width = max(std * 3.0, (v_hi - v_lo) * (1.0 + margin_fraction), span * min_width_fraction)
+        width = min(width, span * 0.55)
+        new_lo = max(lo, best_center - 0.5 * width)
+        new_hi = min(hi, best_center + 0.5 * width)
+
+        if new_hi - new_lo < span * min_width_fraction:
+            center = 0.5 * (new_lo + new_hi)
+            half = 0.5 * span * min_width_fraction
+            new_lo = max(lo, center - half)
+            new_hi = min(hi, center + half)
+
+        narrowed.append((key, float(new_lo), float(new_hi), desc))
+        details["bounds"][key] = {
+            "base_low": lo,
+            "base_high": hi,
+            "dynamic_low": float(new_lo),
+            "dynamic_high": float(new_hi),
+            "best_center": best_center,
+            "top_min": v_lo,
+            "top_max": v_hi,
+        }
+
+    return narrowed, details
 
 
 # ─── 실시간 모니터 ────────────────────────────────────────────────────────────
@@ -538,7 +642,12 @@ def run_optuna(gen, fit_model, cycles_data, monitor, n_trials, seed, out_dir,
                n_jobs: int = 1, cycle_workers: int = 1,
                early_stop_loss: float = 0.0,
                early_stop_patience: int = 0,
-               early_stop_min_delta: float = 0.0) -> np.ndarray:
+               early_stop_min_delta: float = 0.0,
+               dynamic_bounds: bool = True,
+               dynamic_warmup_trials: int = 30,
+               dynamic_top_fraction: float = 0.35,
+               dynamic_margin_fraction: float = 0.35,
+               penalty_loss_threshold: float = 1e5) -> np.ndarray:
     """Optuna 탐색.
 
     n_jobs > 1: 각 trial을 별도 스레드에서 실행 (joblib prefer='threads').
@@ -564,24 +673,6 @@ def run_optuna(gen, fit_model, cycles_data, monitor, n_trials, seed, out_dir,
             f"{early_stop_patience} trials without improvement >= {early_stop_min_delta:g}",
             flush=True,
         )
-
-    def objective(trial):
-        v = np.array([trial.suggest_float(k, lo, hi) for k, lo, hi, _ in PARAM_DEFS])
-        # Optuna 병렬 경로에서는 전역 프로세스 풀 대신 스레드-로컬 모델을 사용한다.
-        if n_jobs > 1 or cycle_workers > 1:
-            loss = compute_loss_threaded_cycles(v, cycles_data, cycle_workers)
-        else:
-            loss = compute_loss(v, gen, fit_model, cycles_data)
-        params = {k: float(v[i]) for i, k in enumerate(PARAM_KEYS)}
-        monitor.update(loss, params)
-        with _hist_lock, open(hist, "a") as f:
-            f.write(json.dumps({"type": "optuna", "loss": loss, **params}) + "\n")
-        return loss
-
-    study = optuna.create_study(
-        direction="minimize",
-        sampler=optuna.samplers.TPESampler(seed=seed),
-    )
 
     best_seen = {"value": float("inf"), "no_improve": 0}
     early_stop_lock = threading.Lock()
@@ -619,8 +710,94 @@ def run_optuna(gen, fit_model, cycles_data, monitor, n_trials, seed, out_dir,
                 study.stop()
 
     callbacks = [early_stop_callback] if early_stop_loss > 0 or early_stop_patience > 0 else None
-    study.optimize(objective, n_trials=n_trials, n_jobs=n_jobs, callbacks=callbacks)
-    best = study.best_trial
+
+    def make_objective(param_defs: list[tuple], stage: str):
+        def objective(trial):
+            v = np.array([trial.suggest_float(k, lo, hi) for k, lo, hi, _ in param_defs])
+            # Optuna 병렬 경로에서는 전역 프로세스 풀 대신 스레드-로컬 모델을 사용한다.
+            if n_jobs > 1 or cycle_workers > 1:
+                loss = compute_loss_threaded_cycles(v, cycles_data, cycle_workers)
+            else:
+                loss = compute_loss(v, gen, fit_model, cycles_data)
+            params = {k: float(v[i]) for i, k in enumerate(PARAM_KEYS)}
+            monitor.update(loss, params)
+            with _hist_lock, open(hist, "a") as f:
+                f.write(json.dumps({"type": stage, "loss": loss, **params}) + "\n")
+            return loss
+        return objective
+
+    def make_study(study_seed: int):
+        return optuna.create_study(
+            direction="minimize",
+            sampler=optuna.samplers.TPESampler(seed=study_seed),
+        )
+
+    studies = []
+    dynamic_info = {
+        "enabled": bool(dynamic_bounds),
+        "base_bounds": _param_bounds_dict(PARAM_DEFS),
+        "stages": [],
+    }
+
+    use_dynamic = bool(dynamic_bounds) and int(n_trials) > 4
+    if use_dynamic:
+        warmup = int(dynamic_warmup_trials)
+        if warmup <= 0:
+            warmup = max(int(n_jobs), min(30, max(4, int(n_trials) // 3)))
+        warmup = max(3, min(warmup, int(n_trials) - 1))
+        remaining = int(n_trials) - warmup
+        print(
+            f"  Optuna dynamic bounds: warmup={warmup}, refine={remaining}, "
+            f"penalty_threshold={penalty_loss_threshold:g}",
+            flush=True,
+        )
+
+        study1 = make_study(seed)
+        study1.optimize(make_objective(PARAM_DEFS, "optuna_warmup"),
+                        n_trials=warmup, n_jobs=n_jobs, callbacks=callbacks)
+        studies.append(study1)
+
+        narrowed_defs, stage_info = _derive_dynamic_param_defs(
+            study1.trials,
+            PARAM_DEFS,
+            penalty_loss_threshold,
+            dynamic_top_fraction,
+            dynamic_margin_fraction,
+        )
+        dynamic_info["stages"].append(stage_info)
+        dynamic_info["refined_bounds"] = _param_bounds_dict(narrowed_defs)
+        (out_dir / "dynamic_bounds.json").write_text(json.dumps(dynamic_info, indent=2))
+
+        if remaining > 0 and stage_info.get("enabled"):
+            print(
+                f"  Optuna dynamic bounds 적용: valid={stage_info['valid_trials']}, "
+                f"top={stage_info['top_trials']}",
+                flush=True,
+            )
+            study2 = make_study(seed + 1)
+            best_warmup = [
+                t.params for t in sorted(
+                    [t for t in study1.trials if t.value is not None and t.value < penalty_loss_threshold],
+                    key=lambda t: float(t.value),
+                )[: min(3, len(study1.trials))]
+            ]
+            for params in _unique_complete_trials(best_warmup, narrowed_defs):
+                study2.enqueue_trial(params)
+            study2.optimize(make_objective(narrowed_defs, "optuna_refined"),
+                            n_trials=remaining, n_jobs=n_jobs, callbacks=callbacks)
+            studies.append(study2)
+        elif remaining > 0:
+            print("  Optuna dynamic bounds 미적용: 유효 warmup trial 부족", flush=True)
+            study1.optimize(make_objective(PARAM_DEFS, "optuna"),
+                            n_trials=remaining, n_jobs=n_jobs, callbacks=callbacks)
+    else:
+        study = make_study(seed)
+        study.optimize(make_objective(PARAM_DEFS, "optuna"),
+                       n_trials=n_trials, n_jobs=n_jobs, callbacks=callbacks)
+        studies.append(study)
+        (out_dir / "dynamic_bounds.json").write_text(json.dumps(dynamic_info, indent=2))
+
+    best = min((s.best_trial for s in studies), key=lambda t: float(t.value))
     return np.array([best.params[k] for k in PARAM_KEYS])
 
 
@@ -753,6 +930,13 @@ def main(args):
             "patience_trials": int(args.early_stop_patience),
             "min_delta": float(args.early_stop_min_delta),
         },
+        "optuna_dynamic_bounds": {
+            "enabled": not bool(args.disable_dynamic_bounds),
+            "warmup_trials": int(args.dynamic_bounds_warmup),
+            "top_fraction": float(args.dynamic_bounds_top_fraction),
+            "margin_fraction": float(args.dynamic_bounds_margin_fraction),
+            "penalty_loss_threshold": float(args.penalty_loss_threshold),
+        },
         "fit_model": FIT_MODEL_TYPE,
         "loss_weights": {
             "Vt_MSE": LOSS_W_VT,
@@ -815,6 +999,8 @@ def main(args):
             "C2m_center_v": tp.get("C2m_secondary_redox_feature_v") or tp.get("C2m_center_v"),
             "C2m_sigma_v":  tp.get("C2m_sigma_v"),
         }
+    parallel_config["parameter_bounds"] = _param_bounds_dict(PARAM_DEFS)
+    (out_dir / "parallel_config.json").write_text(json.dumps(parallel_config, indent=2))
 
     model_desc = (
         f"PyBaMM {FIT_MODEL_TYPE}  |  particle phases: ('1','2')  |  "
@@ -838,7 +1024,12 @@ def main(args):
                                   cycle_workers=optuna_cycle_workers,
                                   early_stop_loss=args.early_stop_loss,
                                   early_stop_patience=args.early_stop_patience,
-                                  early_stop_min_delta=args.early_stop_min_delta)
+                                  early_stop_min_delta=args.early_stop_min_delta,
+                                  dynamic_bounds=not args.disable_dynamic_bounds,
+                                  dynamic_warmup_trials=args.dynamic_bounds_warmup,
+                                  dynamic_top_fraction=args.dynamic_bounds_top_fraction,
+                                  dynamic_margin_fraction=args.dynamic_bounds_margin_fraction,
+                                  penalty_loss_threshold=args.penalty_loss_threshold)
         best_final  = run_scipy(best_optuna, gen, fit_model, cycles_data,
                                  monitor, args.n_scipy, out_dir)
         save_results(best_final, monitor, args.true_params, out_dir)
@@ -893,6 +1084,26 @@ if __name__ == "__main__":
     parser.add_argument(
         "--early-stop-min-delta", type=float, default=0.0,
         help="patience 판단 시 개선으로 인정할 최소 loss 감소량",
+    )
+    parser.add_argument(
+        "--disable-dynamic-bounds", action="store_true",
+        help="warmup trial 기반 동적 bounds 축소를 끄고 단일 bounds로 Optuna 실행",
+    )
+    parser.add_argument(
+        "--dynamic-bounds-warmup", type=int, default=30,
+        help="동적 bounds 계산 전 warmup trial 수. 0이면 n_optuna 기반 자동 설정",
+    )
+    parser.add_argument(
+        "--dynamic-bounds-top-fraction", type=float, default=0.35,
+        help="warmup 유효 trial 중 bounds 축소에 사용할 상위 loss 비율",
+    )
+    parser.add_argument(
+        "--dynamic-bounds-margin-fraction", type=float, default=0.35,
+        help="상위 trial min/max 주변에 추가할 bounds margin 비율",
+    )
+    parser.add_argument(
+        "--penalty-loss-threshold", type=float, default=1e5,
+        help="동적 bounds 계산에서 solver 실패/penalty trial로 제외할 loss 기준",
     )
     parser.add_argument(
         "--n-jobs", type=int, default=1,
